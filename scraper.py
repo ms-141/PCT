@@ -7,7 +7,7 @@ import re
 import time
 
 
-# Purpose: Collect course information by retrieving the raw html using BeuatifulSoup
+# Purpose: Collect course information by retrieving the raw html using BeuatifulSoup and save it as a JSON
 
 #----------------------------------
 # SETUP 
@@ -44,6 +44,7 @@ catalog_page_urls = [url,
 all_course_links = set()
 
 for page_url in catalog_page_urls:
+    print(f"Fetching catalog page: {page_url}")
     page_response = requests.get(page_url, timeout=15)
     page_response.raise_for_status() # outputs errors
     page_soup = BeautifulSoup(page_response.text, "html.parser")
@@ -113,6 +114,8 @@ for i, link in enumerate(course_links, start=1):
     data = course_page_extract(link)
     if data:
         extracted_course_data.append(data)
+    else:
+        print(f"Skipped: {link}")
 
     if i % 50 == 0:
         print("Processed", i, "of", len(course_links))
