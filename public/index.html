@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PCT Website</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="header">
+        <h1>Prerequisite Checker Tree <span class="subtitle">
+            The place to check course descriptions, 
+            prerequisites, and possible course paths.
+        </span></h1>
+    </div>
+
+    <!-- Search bar -->
+    <div class="search_bar">
+        <input type="text" id="searchInput" placeholder="Search by course code (e.g. COMP 2631)" autocomplete="off">
+        <div id="suggestions" class="suggestions"></div>
+    </div>
+
+    <div class="card_container">
+        <div class="tree_container">
+            <svg class="lines"></svg>
+
+            <div class="tree">
+
+                <div class="left" id="leftCol">
+                    <div class="course_card">
+                        <h2>COMP 1631</h2>
+                        <p>Introduction to Computer Science I</p>
+                    </div>
+                    <div class="course_card">
+                        <h2>COMP 1701</h2>
+                        <p>Introduction to Problem Solving and Programming</p>
+                    </div>
+                </div>
+
+                <div class="center" id="centerCol">
+                    <div class="course_card main">
+                        <h2>COMP 1633</h2>
+                        <p>Introduction to Computer Science II</p>
+                    </div>
+                </div>
+
+                <div class="right" id="rightCol">
+                    <div class="course_card">
+                        <h2>COMP 2631</h2>
+                        <p>Information Structures I</p>
+                    </div>
+                    <div class="course_card">
+                        <h2>COMP 2655</h2>
+                        <p>Computing Machinery I</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="info_panel" id="infoPanel">
+        <h2 id="infoTitle">Description of COMP 1633</h2>
+        <div id="infoDesc">
+            <p>Introduction to object-oriented analysis and design, programming using an object-oriented language, 
+                and implementation of linked data structures. Issues of modularity, software design, 
+                and programming style will be emphasized.
+            </p>
+        </div>
+
+        <!-- Progress tracking controls (FR4) -->
+        <div class="progress_section" id="progressSection" style="display:none;">
+            <h3>Your Progress</h3>
+            <div class="status_buttons">
+                <button class="status_btn" data-status="completed" onclick="setStatus('completed')">✔ Completed</button>
+                <button class="status_btn" data-status="in-progress" onclick="setStatus('in-progress')">⏳ In Progress</button>
+                <button class="status_btn" data-status="planned" onclick="setStatus('planned')">📋 Planned</button>
+                <button class="status_btn clear_btn" onclick="setStatus('')">✕ Clear</button>
+            </div>
+        </div>
+
+        <!-- Legend (FR5) -->
+        <div class="legend">
+            <h3>Legend</h3>
+            <div class="legend_items">
+                <div class="legend_item"><span class="legend_dot completed"></span> Completed</div>
+                <div class="legend_item"><span class="legend_dot in-progress"></span> In Progress</div>
+                <div class="legend_item"><span class="legend_dot planned"></span> Planned</div>
+                <div class="legend_item"><span class="legend_dot"></span> Not tracked</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        const API = '';  // same origin - Express serves this file
+        const USER_ID = 1;  // temporary until auth is built
+        let currentCourse = null;
+        let progress = {};  // course_code - status
+
+        // Load user progress from the API on startup
+        async function loadProgress() {
+            try {
+                const res = await fetch(API + '/api/progress/' + USER_ID);
+                const data = await res.json();
+                progress = {};
+                data.forEach(function(p) { progress[p.course_code] = p.status; });
+            } catch (err) {
+                console.log('Could not load progress, using empty:', err);
+            }
+        }
+
+        loadProgress();
+
+        // Search (now calls Express API)
+        const searchInput = document.getElementById('searchInput');
+        const suggestionsBox = document.getElementById('suggestions');
+
+        searchInput.addEventListener('input', async function() {
+            const query = this.value.trim();
+            suggestionsBox.innerHTML = '';
+
+            if (query.length < 2) {
+                suggestionsBox.style.display = 'none';
+                return;
+            }
+
+            try {
+                const res = await fetch(API + '/api/courses/search?q=' + encodeURIComponent(query));
+                const matches = await res.json();
+
+                if (matches.length === 0) {
+                    suggestionsBox.style.display = 'none';
+                    return;
+                }
+
+                matches.forEach(function(c) {
+                    const div = document.createElement('div');
+                    div.className = 'suggestion_item';
+
+                    const statusClass = progress[c.course_code] || '';
+                    const dot = statusClass ? '<span class="legend_dot ' + statusClass + '" style="margin-right:6px;"></span>' : '';
+
+                    div.innerHTML = dot + '<strong>' + c.course_code + '</strong> - ' + c.course_title;
+                    div.addEventListener('click', function() {
+                        searchInput.value = c.course_code;
+                        suggestionsBox.style.display = 'none';
+                        selectCourse(c.course_code);
+                    });
+                    suggestionsBox.appendChild(div);
+                });
+                suggestionsBox.style.display = 'block';
+            } catch (err) {
+                console.error('Search failed:', err);
+            }
+        });
+
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const query = this.value.trim().toUpperCase();
+                suggestionsBox.style.display = 'none';
+                selectCourse(query);
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search_bar')) suggestionsBox.style.display = 'none';
+        });
+
+        // Select & Render (calls API for course detail) 
+        async function selectCourse(code) {
+            try {
+                const res = await fetch(API + '/api/courses/' + encodeURIComponent(code));
+                if (!res.ok) return;
+                const course = await res.json();
+
+                currentCourse = code;
+
+                const leftCol = document.getElementById('leftCol');
+                const centerCol = document.getElementById('centerCol');
+                const rightCol = document.getElementById('rightCol');
+
+                // Center
+                centerCol.innerHTML = makeCard(course.course_code, course.course_title, true);
+
+                // Left prerequisites
+                leftCol.innerHTML = '';
+                if (course.prereq_codes.length === 0) {
+                    leftCol.innerHTML = '<p class="no_items">No prerequisites</p>';
+                }
+                for (const pCode of course.prereq_codes) {
+                    // Fetch each prereq's title
+                    try {
+                        const pRes = await fetch(API + '/api/courses/' + encodeURIComponent(pCode));
+                        if (pRes.ok) {
+                            const p = await pRes.json();
+                            leftCol.innerHTML += makeCard(p.course_code, p.course_title, false);
+                        } else {
+                            leftCol.innerHTML += makeCard(pCode, 'Not in catalog', false);
+                        }
+                    } catch (err) {
+                        leftCol.innerHTML += makeCard(pCode, 'Not in catalog', false);
+                    }
+                }
+
+                // Right unlocks
+                rightCol.innerHTML = '';
+                if (course.unlocks.length === 0) {
+                    rightCol.innerHTML = '<p class="no_items">No courses unlocked</p>';
+                }
+                for (const uCode of course.unlocks) {
+                    try {
+                        const uRes = await fetch(API + '/api/courses/' + encodeURIComponent(uCode));
+                        if (uRes.ok) {
+                            const u = await uRes.json();
+                            rightCol.innerHTML += makeCard(u.course_code, u.course_title, false);
+                        } else {
+                            rightCol.innerHTML += makeCard(uCode, '', false);
+                        }
+                    } catch (err) {
+                        rightCol.innerHTML += makeCard(uCode, '', false);
+                    }
+                }
+
+                // Update info panel
+                updateInfoPanel(course);
+
+                // Redraw lines
+                requestAnimationFrame(function() {
+                    requestAnimationFrame(redrawLines);
+                });
+
+            } catch (err) {
+                console.error('Failed to load course:', err);
+            }
+        }
+
+        function makeCard(code, title, isMain) {
+            const status = progress[code] || '';
+            const statusClass = status ? ' ' + status : '';
+            const cls = isMain ? 'course_card main' + statusClass : 'course_card' + statusClass;
+            return '<div class="' + cls + '" onclick="cardClicked(\'' + code + '\')" data-code="' + code + '">' +
+                       '<h2>' + code + '</h2>' +
+                       '<p>' + title + '</p>' +
+                   '</div>';
+        }
+
+        function cardClicked(code) {
+            searchInput.value = code;
+            selectCourse(code);
+        }
+
+        function updateInfoPanel(course) {
+            document.getElementById('infoTitle').textContent = 'Description of ' + course.course_code;
+
+            var html = '<p><strong>' + course.course_title + '</strong></p>';
+
+            if (course.prerequisites_raw) {
+                html += '<p><strong>Prerequisites:</strong> ' + course.prerequisites_raw + '</p>';
+            } else {
+                html += '<p>No prerequisites required.</p>';
+            }
+
+            if (course.unlocks.length > 0) {
+                html += '<p><strong>Unlocks:</strong> ' + course.unlocks.join(', ') + '</p>';
+            }
+
+            if (course.url) {
+                html += '<p><a href="' + course.url + '" target="_blank">View in MRU Catalog ↗</a></p>';
+            }
+
+            document.getElementById('infoDesc').innerHTML = html;
+
+            // Show progress controls
+            document.getElementById('progressSection').style.display = 'block';
+            var currentStatus = progress[course.course_code] || '';
+            document.querySelectorAll('.status_btn').forEach(function(btn) {
+                btn.classList.remove('active');
+                if (btn.dataset.status === currentStatus) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        // Progress Saves to Express API - SQLite
+        async function setStatus(status) {
+            if (!currentCourse) return;
+
+            try {
+                await fetch(API + '/api/progress/' + USER_ID, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ course_code: currentCourse, status: status })
+                });
+
+                if (status === '') {
+                    delete progress[currentCourse];
+                } else {
+                    progress[currentCourse] = status;
+                }
+
+                // Re-render to update colors
+                selectCourse(currentCourse);
+            } catch (err) {
+                console.error('Failed to save progress:', err);
+            }
+        }
+
+        // SVG Lines
+        function redrawLines() {
+            var svg = document.querySelector('.lines');
+            var treeContainer = document.querySelector('.tree_container');
+            var center = document.querySelector('.course_card.main');
+            var leftCards = document.querySelectorAll('.left .course_card');
+            var rightCards = document.querySelectorAll('.right .course_card');
+            if (!svg || !treeContainer || !center) return;
+
+            var bounds = treeContainer.getBoundingClientRect();
+            var centerRect = center.getBoundingClientRect();
+
+            var centerLeftX = centerRect.left - bounds.left;
+            var centerRightX = centerRect.right - bounds.left;
+            var centerY = centerRect.top - bounds.top + centerRect.height / 2;
+
+            svg.setAttribute('viewBox', '0 0 ' + bounds.width + ' ' + bounds.height);
+            svg.setAttribute('preserveAspectRatio', 'none');
+            svg.innerHTML = '';
+
+            var makeLine = function(x1, y1, x2, y2) {
+                var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x1);
+                line.setAttribute('y1', y1);
+                line.setAttribute('x2', x2);
+                line.setAttribute('y2', y2);
+                line.setAttribute('stroke', 'black');
+                line.setAttribute('stroke-width', '2');
+                return line;
+            };
+
+            leftCards.forEach(function(card) {
+                var r = card.getBoundingClientRect();
+                var x2 = r.right - bounds.left;
+                var y2 = r.top - bounds.top + r.height / 2;
+                svg.appendChild(makeLine(centerLeftX, centerY, x2, y2));
+            });
+
+            rightCards.forEach(function(card) {
+                var r = card.getBoundingClientRect();
+                var x2 = r.left - bounds.left;
+                var y2 = r.top - bounds.top + r.height / 2;
+                svg.appendChild(makeLine(centerRightX, centerY, x2, y2));
+            });
+        }
+
+        window.addEventListener('load', redrawLines);
+        window.addEventListener('resize', redrawLines);
+    </script>
+</body>
+</html>

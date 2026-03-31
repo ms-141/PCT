@@ -1,0 +1,442 @@
+.header
+{
+    background-color: rgb(100, 100, 100);
+    color: white;
+    padding: 15px 20px;
+}
+
+.subtitle
+{
+    font-size: 18px;
+    font-weight: normal;
+    color: rgb(240, 240, 240);
+}
+
+.card_container 
+{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    width: 50%;
+    max-width: 1100px;
+    margin: 10px 20px 0 auto; 
+    
+    padding: 16px;
+    min-height: 70vh;
+    border: 1px solid #ccc;
+    border-radius: 12px;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+    background-color: #ffffff;
+}
+
+.info_panel
+{
+    width: 40%;
+    max-width: 500px;
+    margin: 8px 0 0 20px; 
+    padding: 16px;
+    border: 1px solid #ccc;
+    border-radius: 12px;
+    background-color: #fdfdfd;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    
+    position: fixed;
+    left: 20px;       
+    top: 160px;         
+    max-height: 75vh;   
+    overflow-y: auto;   
+    z-index: 10;
+}
+
+.info_panel h2
+{
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-size: 20px;
+    color: #333;
+}
+
+.info_panel p
+{
+    margin: 0 0 8px 0;
+    font-size: 15px;
+    color: #444;
+    line-height: 1.5;
+}
+
+.info_panel a
+{
+    color: #2980b9;
+    text-decoration: none;
+}
+
+.info_panel a:hover
+{
+    text-decoration: underline;
+}
+
+.tree
+{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 120px;
+    height: 100%;
+    padding: 0 100px;
+}
+
+.tree_container
+{
+    position: relative;
+}
+
+.lines
+{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.lines line
+{
+    stroke: black;
+    stroke-width: 2px;
+}
+
+.left, .right
+{
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+.center
+{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.left .course_card:first-child,
+.right .course_card:first-child 
+{
+    transform: translateY(-40px);
+}
+
+.left .course_card:last-child,
+.right .course_card:last-child 
+{
+    transform: translateY(40px);
+}
+
+.course_card 
+{
+    background-color: rgb(155, 155, 155);
+    padding: 10px;
+    border-radius: 8px;
+    width: 150px;
+    height: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+}
+
+.course_card:hover
+{
+    background-color: rgb(130, 130, 130);
+}
+
+.course_card h2
+{
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    text-align: center;
+}
+
+.course_card p {
+    margin: 0;
+    font-size: 13px;
+    text-align: center;
+
+    display: -webkit-box;
+    -webkit-line-clamp: 2;   /* max 2 lines */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+body 
+{
+    font-family: Arial, sans-serif;
+    margin: 0;
+}
+
+.header h1
+{
+    margin: 0;
+}
+
+/* ---- Color-coded progress states (FR5) ---- */
+
+.course_card.completed
+{
+    background-color: #27ae60;
+    color: white;
+}
+
+.course_card.completed h2,
+.course_card.completed p
+{
+    color: white;
+}
+
+.course_card.completed:hover
+{
+    background-color: #219a52;
+}
+
+.course_card.in-progress
+{
+    background-color: #f1c40f;
+    color: #333;
+}
+
+.course_card.in-progress h2,
+.course_card.in-progress p
+{
+    color: #333;
+}
+
+.course_card.in-progress:hover
+{
+    background-color: #d4ac0d;
+}
+
+.course_card.planned
+{
+    background-color: #ecf0f1;
+    color: #333;
+    border: 2px dashed #bdc3c7;
+}
+
+.course_card.planned h2,
+.course_card.planned p
+{
+    color: #555;
+}
+
+.course_card.planned:hover
+{
+    background-color: #dfe6e9;
+}
+
+/* Main card keeps blue-ish tint but respects status */
+.course_card.main
+{
+    width: 170px;
+    height: 70px;
+    border: 3px solid #333;
+}
+
+.no_items
+{
+    color: #999;
+    font-size: 14px;
+    font-style: italic;
+    text-align: center;
+}
+
+/* ---- Search Bar ---- */
+
+.search_bar
+{
+    position: relative;
+    max-width: 500px;
+    margin: 16px auto;
+    padding: 0 20px;
+}
+
+.search_bar input
+{
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 16px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.search_bar input:focus
+{
+    border-color: rgb(100, 100, 100);
+}
+
+.suggestions
+{
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 20px;
+    right: 20px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.suggestion_item
+{
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 14px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+}
+
+.suggestion_item:last-child
+{
+    border-bottom: none;
+}
+
+.suggestion_item:hover
+{
+    background-color: #f0f0f0;
+}
+
+/* ---- Progress Controls ---- */
+
+.progress_section
+{
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+}
+
+.progress_section h3
+{
+    margin: 0 0 10px 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.status_buttons
+{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.status_btn
+{
+    padding: 6px 12px;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.status_btn:hover
+{
+    background-color: #f0f0f0;
+}
+
+.status_btn.active
+{
+    font-weight: bold;
+}
+
+.status_btn[data-status="completed"].active
+{
+    background-color: #27ae60;
+    color: white;
+    border-color: #27ae60;
+}
+
+.status_btn[data-status="in-progress"].active
+{
+    background-color: #f1c40f;
+    color: #333;
+    border-color: #f1c40f;
+}
+
+.status_btn[data-status="planned"].active
+{
+    background-color: #ecf0f1;
+    border-color: #bdc3c7;
+}
+
+.clear_btn
+{
+    color: #999;
+    font-size: 12px;
+}
+
+/* ---- Legend ---- */
+
+.legend
+{
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+}
+
+.legend h3
+{
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.legend_items
+{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.legend_item
+{
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #666;
+}
+
+.legend_dot
+{
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    background-color: rgb(155, 155, 155);
+    display: inline-block;
+}
+
+.legend_dot.completed
+{
+    background-color: #27ae60;
+}
+
+.legend_dot.in-progress
+{
+    background-color: #f1c40f;
+}
+
+.legend_dot.planned
+{
+    background-color: #ecf0f1;
+    border: 1px dashed #bdc3c7;
+}
