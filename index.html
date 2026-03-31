@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PCT Website</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="header">
+        <h1>Prerequisite Checker Tree <span class="subtitle">
+            The place to check course descriptions, 
+            prerequisites, and possible course paths.
+        </span></h1>
+    </div>
+
+    <div class="card_container">
+        <div class="tree_container">
+            <svg class="lines"></svg>
+
+            <div class="tree">
+
+                <div class="left">
+                    <div class="course_card">
+                        <h2>COMP 2631</h2>
+                        <p>Information Structures I</p>
+                    </div>
+                    <div class="course_card">
+                        <h2>COMP 2655</h2>
+                        <p>Computing Machinery I</p>
+                    </div>
+                </div>
+
+                <div class="center">
+                    <div class="course_card main">
+                        <h2>COMP 1633</h2>
+                        <p>Introduction to Computer Science II</p>
+                    </div>
+                </div>
+
+                <div class="right">
+                    <div class="course_card">
+                        <h2>COMP 1631</h2>
+                        <p>Introduction to Computer Science I</p>
+                    </div>
+                    <div class="course_card">
+                        <h2>COMP 1701</h2>
+                        <p>Introduction to Problem Solving and Programming</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="info_panel">
+        <h2>Description of COMP 1633</h2>
+        <p>Introduction to object-oriented analysis and design, programming using an object-oriented language, 
+            and implementation of linked data structures. Issues of modularity, software design, 
+            and programming style will be emphasized.
+        </p>
+    </div>
+
+    <!-- This is for the SVG lines between course boxes, wont be needed when we start using D3.js -->
+    <script>
+        function redrawLines() {
+            const svg = document.querySelector('.lines');
+            const treeContainer = document.querySelector('.tree_container');
+            const center = document.querySelector('.course_card.main');
+            const leftCards = document.querySelectorAll('.left .course_card');
+            const rightCards = document.querySelectorAll('.right .course_card');
+            if (!svg || !treeContainer || !center) return;
+
+            const bounds = treeContainer.getBoundingClientRect();
+            const centerRect = center.getBoundingClientRect();
+
+            const centerLeftX = centerRect.left - bounds.left;
+            const centerRightX = centerRect.right - bounds.left;
+            const centerY = centerRect.top - bounds.top + centerRect.height / 2;
+
+            svg.setAttribute('viewBox', `0 0 ${bounds.width} ${bounds.height}`);
+            svg.setAttribute('preserveAspectRatio', 'none');
+            svg.innerHTML = '';
+
+            const makeLine = (x1, y1, x2, y2) => {
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x1);
+                line.setAttribute('y1', y1);
+                line.setAttribute('x2', x2);
+                line.setAttribute('y2', y2);
+                line.setAttribute('stroke', 'black');
+                line.setAttribute('stroke-width', '2');
+                return line;
+            };
+
+            leftCards.forEach(card => {
+                const r = card.getBoundingClientRect();
+                const x2 = r.right - bounds.left;
+                const y2 = r.top - bounds.top + r.height / 2;
+                svg.appendChild(makeLine(centerLeftX, centerY, x2, y2));
+            });
+
+            rightCards.forEach(card => {
+                const r = card.getBoundingClientRect();
+                const x2 = r.left - bounds.left;
+                const y2 = r.top - bounds.top + r.height / 2;
+                svg.appendChild(makeLine(centerRightX, centerY, x2, y2));
+            });
+        }
+
+        window.addEventListener('load', redrawLines);
+        window.addEventListener('resize', redrawLines);
+    </script>
+</body>
+</html>
