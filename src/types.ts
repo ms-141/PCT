@@ -36,6 +36,35 @@ export interface UserProgress {
     updated_at: string;  // ISO date string
 }
 
+// User Authentication
+ 
+export interface User {
+    id: number;
+    email: string;
+    username: string;
+    password_hash: string;
+    created_at: string;
+}
+ 
+// What the register/login endpoints accept
+export interface AuthRequest {
+    email: string;
+    username: string;
+    password: string;
+}
+ 
+// What the register/login endpoints return
+export interface AuthResponse {
+    success: boolean;
+    token?: string;      // JWT token
+    user?: {
+        id: number;
+        email: string;
+        username: string;
+    };
+    error?: string;
+}
+
 // API Response Types
 
 // What the /api/courses/:code endpoint returns

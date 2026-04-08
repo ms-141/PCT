@@ -11,6 +11,39 @@
             The place to check course descriptions, 
             prerequisites, and possible course paths.
         </span></h1>
+        <!-- Auth bar in header -->
+        <div class="auth_bar" id="authBar">
+            <span id="authStatus">Not logged in</span>
+            <button id="authBtn" onclick="showAuthModal()">Login / Register</button>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div class="modal_overlay" id="authModal" style="display:none;">
+        <div class="modal">
+            <button class="modal_close" onclick="hideAuthModal()">✕</button>
+            <h2 id="authModalTitle">Login</h2>
+
+            <div class="auth_tabs">
+                <button class="auth_tab active" id="tabLogin" onclick="switchTab('login')">Login</button>
+                <button class="auth_tab" id="tabRegister" onclick="switchTab('register')">Register</button>
+            </div>
+
+            <div id="loginForm">
+                <input type="email" id="loginEmail" placeholder="Email" class="auth_input">
+                <input type="password" id="loginPassword" placeholder="Password" class="auth_input">
+                <button class="auth_submit" onclick="doLogin()">Login</button>
+            </div>
+
+            <div id="registerForm" style="display:none;">
+                <input type="text" id="regUsername" placeholder="Username" class="auth_input">
+                <input type="email" id="regEmail" placeholder="Email" class="auth_input">
+                <input type="password" id="regPassword" placeholder="Password (min 6 chars)" class="auth_input">
+                <button class="auth_submit" onclick="doRegister()">Create Account</button>
+            </div>
+
+            <p class="auth_error" id="authError"></p>
+        </div>
     </div>
 
     <!-- Search bar -->
@@ -70,11 +103,16 @@
         <!-- Progress tracking controls (FR4) -->
         <div class="progress_section" id="progressSection" style="display:none;">
             <h3>Your Progress</h3>
-            <div class="status_buttons">
-                <button class="status_btn" data-status="completed" onclick="setStatus('completed')">✔ Completed</button>
-                <button class="status_btn" data-status="in-progress" onclick="setStatus('in-progress')">⏳ In Progress</button>
-                <button class="status_btn" data-status="planned" onclick="setStatus('planned')">📋 Planned</button>
-                <button class="status_btn clear_btn" onclick="setStatus('')">✕ Clear</button>
+            <div id="progressLoginMsg" style="display:none;">
+                <p class="login_prompt" onclick="showAuthModal()">Log in to track your progress</p>
+            </div>
+            <div id="progressButtons">
+                <div class="status_buttons">
+                    <button class="status_btn" data-status="completed" onclick="setStatus('completed')">✔ Completed</button>
+                    <button class="status_btn" data-status="in-progress" onclick="setStatus('in-progress')">⏳ In Progress</button>
+                    <button class="status_btn" data-status="planned" onclick="setStatus('planned')">📋 Planned</button>
+                    <button class="status_btn clear_btn" onclick="setStatus('')">✕ Clear</button>
+                </div>
             </div>
         </div>
 
@@ -91,33 +129,198 @@
     </div>
 
     <script>
-        // State
-        const API = '';  // same origin - Express serves this file
-        const USER_ID = 1;  // temporary until auth is built
-        let currentCourse = null;
-        let activeSelectRequestId = 0;
-        let progress = {};  // course_code - status
+        //  Auth State 
+        var token = localStorage.getItem('pct_token') || '';
+        var currentUser = null;
+        var currentCourse = null;
+        var activeSelectRequestId = 0;
+        var progress = {};
 
-        // Load user progress from the API on startup
-        async function loadProgress() {
+        //  Auth Init 
+        async function initAuth() {
+            if (!token) { updateAuthUI(); return; }
+
             try {
-                const res = await fetch(API + '/api/progress/' + USER_ID);
-                const data = await res.json();
-                progress = {};
-                data.forEach(function(p) { progress[p.course_code] = p.status; });
+                var res = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    currentUser = await res.json();
+                    await loadProgress();
+                } else {
+                    token = '';
+                    localStorage.removeItem('pct_token');
+                }
             } catch (err) {
-                console.log('Could not load progress, using empty:', err);
+                console.log('Auth check failed:', err);
+            }
+            updateAuthUI();
+        }
+
+        function updateAuthUI() {
+            var authStatus = document.getElementById('authStatus');
+            var authBtn = document.getElementById('authBtn');
+
+            if (currentUser) {
+                authStatus.textContent = 'Welcome, ' + currentUser.username;
+                authBtn.textContent = 'Logout';
+                authBtn.onclick = doLogout;
+            } else {
+                authStatus.textContent = 'Not logged in';
+                authBtn.textContent = 'Login / Register';
+                authBtn.onclick = showAuthModal;
+            }
+            updateProgressSection();
+        }
+
+        function updateProgressSection() {
+            var loginMsg = document.getElementById('progressLoginMsg');
+            var buttons = document.getElementById('progressButtons');
+            if (currentUser) {
+                loginMsg.style.display = 'none';
+                buttons.style.display = 'block';
+            } else {
+                loginMsg.style.display = 'block';
+                buttons.style.display = 'none';
             }
         }
 
-        loadProgress();
+        //  Auth Modal 
+        function showAuthModal() {
+            document.getElementById('authModal').style.display = 'flex';
+            document.getElementById('authError').textContent = '';
+        }
 
-        // Search (now calls Express API)
-        const searchInput = document.getElementById('searchInput');
-        const suggestionsBox = document.getElementById('suggestions');
+        function hideAuthModal() {
+            document.getElementById('authModal').style.display = 'none';
+        }
+
+        function switchTab(tab) {
+            document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+            document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
+            document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+            document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+            document.getElementById('authModalTitle').textContent = tab === 'login' ? 'Login' : 'Register';
+            document.getElementById('authError').textContent = '';
+        }
+
+        async function doLogin() {
+            var email = document.getElementById('loginEmail').value.trim();
+            var password = document.getElementById('loginPassword').value;
+            var errorEl = document.getElementById('authError');
+
+            if (!email || !password) { errorEl.textContent = 'Please fill in all fields.'; return; }
+
+            try {
+                var res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, password: password })
+                });
+                var data = await res.json();
+
+                if (data.success) {
+                    token = data.token;
+                    currentUser = data.user;
+                    localStorage.setItem('pct_token', token);
+                    hideAuthModal();
+                    await loadProgress();
+                    updateAuthUI();
+                    if (currentCourse) selectCourse(currentCourse);
+                } else {
+                    errorEl.textContent = data.error;
+                }
+            } catch (err) {
+                errorEl.textContent = 'Connection failed. Is the server running?';
+            }
+        }
+
+        async function doRegister() {
+            var username = document.getElementById('regUsername').value.trim();
+            var email = document.getElementById('regEmail').value.trim();
+            var password = document.getElementById('regPassword').value;
+            var errorEl = document.getElementById('authError');
+
+            if (!username || !email || !password) { errorEl.textContent = 'Please fill in all fields.'; return; }
+            if (password.length < 6) { errorEl.textContent = 'Password must be at least 6 characters.'; return; }
+
+            try {
+                var res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, username: username, password: password })
+                });
+                var data = await res.json();
+
+                if (data.success) {
+                    token = data.token;
+                    currentUser = data.user;
+                    localStorage.setItem('pct_token', token);
+                    hideAuthModal();
+                    updateAuthUI();
+                } else {
+                    errorEl.textContent = data.error;
+                }
+            } catch (err) {
+                errorEl.textContent = 'Connection failed. Is the server running?';
+            }
+        }
+
+        function doLogout() {
+            token = '';
+            currentUser = null;
+            progress = {};
+            localStorage.removeItem('pct_token');
+            updateAuthUI();
+            if (currentCourse) selectCourse(currentCourse);
+        }
+
+        //  Progress (uses JWT auth) 
+        async function loadProgress() {
+            if (!token) { progress = {}; return; }
+            try {
+                var res = await fetch('/api/progress', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                var data = await res.json();
+                progress = {};
+                data.forEach(function(p) { progress[p.course_code] = p.status; });
+            } catch (err) {
+                console.log('Could not load progress:', err);
+            }
+        }
+
+        async function setStatus(status) {
+            if (!currentCourse) return;
+            if (!currentUser) { showAuthModal(); return; }
+
+            try {
+                await fetch('/api/progress', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ course_code: currentCourse, status: status })
+                });
+
+                if (status === '') {
+                    delete progress[currentCourse];
+                } else {
+                    progress[currentCourse] = status;
+                }
+                selectCourse(currentCourse);
+            } catch (err) {
+                console.error('Failed to save progress:', err);
+            }
+        }
+
+        //  Search 
+        var searchInput = document.getElementById('searchInput');
+        var suggestionsBox = document.getElementById('suggestions');
 
         searchInput.addEventListener('input', async function() {
-            const query = this.value.trim();
+            var query = this.value.trim();
             suggestionsBox.innerHTML = '';
 
             if (query.length < 2) {
@@ -126,8 +329,8 @@
             }
 
             try {
-                const res = await fetch(API + '/api/courses/search?q=' + encodeURIComponent(query));
-                const matches = await res.json();
+                var res = await fetch('/api/courses/search?q=' + encodeURIComponent(query));
+                var matches = await res.json();
 
                 if (matches.length === 0) {
                     suggestionsBox.style.display = 'none';
@@ -135,11 +338,11 @@
                 }
 
                 matches.forEach(function(c) {
-                    const div = document.createElement('div');
+                    var div = document.createElement('div');
                     div.className = 'suggestion_item';
 
-                    const statusClass = progress[c.course_code] || '';
-                    const dot = statusClass ? '<span class="legend_dot ' + statusClass + '" style="margin-right:6px;"></span>' : '';
+                    var statusClass = progress[c.course_code] || '';
+                    var dot = statusClass ? '<span class="legend_dot ' + statusClass + '" style="margin-right:6px;"></span>' : '';
 
                     div.innerHTML = dot + '<strong>' + c.course_code + '</strong> - ' + c.course_title;
                     div.addEventListener('click', function() {
@@ -157,7 +360,7 @@
 
         searchInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
-                const query = this.value.trim().toUpperCase();
+                var query = this.value.trim().toUpperCase();
                 suggestionsBox.style.display = 'none';
                 selectCourse(query);
             }
@@ -167,65 +370,61 @@
             if (!e.target.closest('.search_bar')) suggestionsBox.style.display = 'none';
         });
 
+        //  Fetch course title helper 
         async function fetchCourseTitle(code) {
             try {
-                const res = await fetch(API + '/api/courses/' + encodeURIComponent(code));
+                var res = await fetch('/api/courses/' + encodeURIComponent(code));
                 if (!res.ok) {
                     return { code: code, title: 'Not in catalog' };
                 }
-                const course = await res.json();
+                var course = await res.json();
                 return { code: course.course_code, title: course.course_title || 'Not in catalog' };
             } catch (err) {
                 return { code: code, title: 'Not in catalog' };
             }
         }
 
-        // Select & Render (calls API for course detail) 
+        //  Select & Render 
         async function selectCourse(code) {
-            const requestId = ++activeSelectRequestId;
+            var requestId = ++activeSelectRequestId;
 
             try {
-                const res = await fetch(API + '/api/courses/' + encodeURIComponent(code));
+                var res = await fetch('/api/courses/' + encodeURIComponent(code));
                 if (!res.ok) return;
-                const course = await res.json();
+                var course = await res.json();
 
                 if (requestId !== activeSelectRequestId) return;
 
                 currentCourse = code;
 
-                const leftCol = document.getElementById('leftCol');
-                const centerCol = document.getElementById('centerCol');
-                const rightCol = document.getElementById('rightCol');
+                var leftCol = document.getElementById('leftCol');
+                var centerCol = document.getElementById('centerCol');
+                var rightCol = document.getElementById('rightCol');
 
-                // Center
                 centerCol.innerHTML = makeCard(course.course_code, course.course_title, true);
 
-                // Update info panel immediately so description never appears to disappear
+                // Update info panel immediately
                 updateInfoPanel(course);
 
-                // Left prerequisites
+                // Left - prerequisites
                 leftCol.innerHTML = '';
                 if (course.prereq_codes.length === 0) {
                     leftCol.innerHTML = '<p class="no_items">No prerequisites</p>';
                 } else {
-                    const prereqDetails = await Promise.all(course.prereq_codes.map(fetchCourseTitle));
-
+                    var prereqDetails = await Promise.all(course.prereq_codes.map(fetchCourseTitle));
                     if (requestId !== activeSelectRequestId) return;
-
                     leftCol.innerHTML = prereqDetails.map(function(p) {
                         return makeCard(p.code, p.title, false);
                     }).join('');
                 }
 
-                // Right unlocks
+                // Right - unlocks
                 rightCol.innerHTML = '';
                 if (course.unlocks.length === 0) {
                     rightCol.innerHTML = '<p class="no_items">No courses unlocked</p>';
                 } else {
-                    const unlockDetails = await Promise.all(course.unlocks.map(fetchCourseTitle));
-
+                    var unlockDetails = await Promise.all(course.unlocks.map(fetchCourseTitle));
                     if (requestId !== activeSelectRequestId) return;
-
                     rightCol.innerHTML = unlockDetails.map(function(u) {
                         return makeCard(u.code, u.title, false);
                     }).join('');
@@ -242,9 +441,9 @@
         }
 
         function makeCard(code, title, isMain) {
-            const status = progress[code] || '';
-            const statusClass = status ? ' ' + status : '';
-            const cls = isMain ? 'course_card main' + statusClass : 'course_card' + statusClass;
+            var status = progress[code] || '';
+            var statusClass = status ? ' ' + status : '';
+            var cls = isMain ? 'course_card main' + statusClass : 'course_card' + statusClass;
             return '<div class="' + cls + '" onclick="cardClicked(\'' + code + '\')" data-code="' + code + '">' +
                        '<h2>' + code + '</h2>' +
                        '<p>' + title + '</p>' +
@@ -283,8 +482,10 @@
 
             document.getElementById('infoDesc').innerHTML = html;
 
-            // Show progress controls
+            // Show progress section
             document.getElementById('progressSection').style.display = 'block';
+            updateProgressSection();
+
             var currentStatus = progress[course.course_code] || '';
             document.querySelectorAll('.status_btn').forEach(function(btn) {
                 btn.classList.remove('active');
@@ -294,31 +495,7 @@
             });
         }
 
-        // Progress Saves to Express API - SQLite
-        async function setStatus(status) {
-            if (!currentCourse) return;
-
-            try {
-                await fetch(API + '/api/progress/' + USER_ID, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ course_code: currentCourse, status: status })
-                });
-
-                if (status === '') {
-                    delete progress[currentCourse];
-                } else {
-                    progress[currentCourse] = status;
-                }
-
-                // Re-render to update colors
-                selectCourse(currentCourse);
-            } catch (err) {
-                console.error('Failed to save progress:', err);
-            }
-        }
-
-        // SVG Lines
+        //  SVG Lines 
         function redrawLines() {
             var svg = document.querySelector('.lines');
             var treeContainer = document.querySelector('.tree_container');
@@ -364,7 +541,10 @@
             });
         }
 
-        window.addEventListener('load', redrawLines);
+        window.addEventListener('load', function() {
+            initAuth();
+            selectCourse('COMP 1633');
+        });
         window.addEventListener('resize', redrawLines);
     </script>
 </body>
