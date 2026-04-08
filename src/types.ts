@@ -4,6 +4,7 @@
 export interface RawCourse {
     course_code: string;
     course_title: string;
+    description?: string;
     prerequisites: string;  // raw text
     url: string;
 }
@@ -12,6 +13,7 @@ export interface RawCourse {
 export interface Course {
     course_code: string;
     course_title: string;
+    description: string;
     prerequisites_raw: string;
     url: string;
 }
@@ -40,6 +42,7 @@ export interface UserProgress {
 export interface CourseDetail {
     course_code: string;
     course_title: string;
+    description: string;
     prerequisites_raw: string;
     url: string;
     prereq_codes: string[];    // parsed prerequisite course codes

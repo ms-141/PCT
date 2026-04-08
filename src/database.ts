@@ -28,10 +28,13 @@ export async function initDatabase(): Promise<void> {
         CREATE TABLE IF NOT EXISTS courses (
             course_code TEXT PRIMARY KEY,
             course_title TEXT NOT NULL,
+            description TEXT,
             prerequisites_raw TEXT,
             url TEXT
         )
     `);
+
+    ensureCourseDescriptionColumn();
 
     db.run(`
         CREATE TABLE IF NOT EXISTS prerequisites (
@@ -60,6 +63,18 @@ function saveDatabase(): void {
     fs.writeFileSync(DB_PATH, buffer);
 }
 
+function ensureCourseDescriptionColumn(): void {
+    const results = db.exec("PRAGMA table_info(courses)");
+    if (results.length === 0) {
+        return;
+    }
+
+    const columns = results[0].values.map((row: any[]) => row[1] as string);
+    if (!columns.includes("description")) {
+        db.run("ALTER TABLE courses ADD COLUMN description TEXT");
+    }
+}
+
 // Import from pct.json
 
 export function importFromJson(jsonPath: string): number {
@@ -72,7 +87,7 @@ export function importFromJson(jsonPath: string): number {
 
     // Insert courses
     const insertCourse = db.prepare(
-        "INSERT OR REPLACE INTO courses (course_code, course_title, prerequisites_raw, url) VALUES (?, ?, ?, ?)"
+        "INSERT OR REPLACE INTO courses (course_code, course_title, description, prerequisites_raw, url) VALUES (?, ?, ?, ?, ?)"
     );
 
     const insertPrereq = db.prepare(
@@ -86,6 +101,7 @@ export function importFromJson(jsonPath: string): number {
         insertCourse.run([
             course.course_code,
             course.course_title,
+            course.description ?? "",
             course.prerequisites,
             course.url,
         ]);
@@ -121,7 +137,7 @@ function parsePrereqCodes(rawString: string): string[] {
 export function getCourseDetail(courseCode: string): CourseDetail | null {
 
     const results = db.exec(
-        "SELECT course_code, course_title, prerequisites_raw, url FROM courses WHERE course_code = ?",
+        "SELECT course_code, course_title, description, prerequisites_raw, url FROM courses WHERE course_code = ?",
         [courseCode]
     );
 
@@ -133,8 +149,9 @@ export function getCourseDetail(courseCode: string): CourseDetail | null {
     const course: Course = {
         course_code: row[0] as string,
         course_title: row[1] as string,
-        prerequisites_raw: (row[2] as string) || "",
-        url: (row[3] as string) || "",
+        description: (row[2] as string) || "",
+        prerequisites_raw: (row[3] as string) || "",
+        url: (row[4] as string) || "",
     };
 
 
@@ -165,7 +182,7 @@ export function getCourseDetail(courseCode: string): CourseDetail | null {
 // Search courses by code or title
 export function searchCourses(query: string, limit: number = 10): Course[] {
     const results = db.exec(
-        `SELECT course_code, course_title, prerequisites_raw, url 
+        `SELECT course_code, course_title, description, prerequisites_raw, url 
          FROM courses 
          WHERE course_code LIKE ? OR course_title LIKE ? 
          LIMIT ?`,
@@ -177,8 +194,9 @@ export function searchCourses(query: string, limit: number = 10): Course[] {
     return results[0].values.map((row: any[]) => ({
         course_code: row[0] as string,
         course_title: row[1] as string,
-        prerequisites_raw: (row[2] as string) || "",
-        url: (row[3] as string) || "",
+        description: (row[2] as string) || "",
+        prerequisites_raw: (row[3] as string) || "",
+        url: (row[4] as string) || "",
     }));
 }
 
@@ -208,7 +226,7 @@ export function setProgress(userId: number, courseCode: string, status: CourseSt
             [userId, courseCode]
         );
     } else {
-  
+
         db.run(
             `INSERT OR REPLACE INTO user_progress (user_id, course_code, status, updated_at) 
              VALUES (?, ?, ?, ?)`,

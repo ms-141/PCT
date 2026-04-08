@@ -7,6 +7,80 @@ import re
 import time
 
 
+STOP_LABELS = [
+    "Prerequisite(s):",
+    "Recommended Preparation:",
+    "Corequisite(s):",
+    "Antirequisite(s):",
+    "Note:",
+    "Note(s):",
+    "GNED Cluster",
+]
+
+METADATA_LABEL_PATTERN = re.compile(
+    r"^(Credit\(s\):|[A-Za-z/&, -]+Hour\(s\):|[A-Za-z/&, -]*Schedule Type:)$"
+)
+
+
+def normalize_text(value):
+    return " ".join(value.split())
+
+
+def fetch_page(url, timeout=15, retries=3, delay_seconds=1):
+    last_error = None
+
+    for attempt in range(1, retries + 1):
+        try:
+            response = requests.get(url, timeout=timeout)
+            response.raise_for_status()
+            return response
+        except requests.RequestException as error:
+            last_error = error
+            print(f"Request failed ({attempt}/{retries}) for {url}: {error}")
+            if attempt < retries:
+                time.sleep(delay_seconds)
+
+    raise last_error
+
+
+def extract_description(block, title_tag):
+    if not block:
+        return ""
+
+    description_parts = []
+    skip_metadata_value = False
+
+    for child in block.contents:
+        if child == title_tag:
+            continue
+
+        if hasattr(child, "get_text"):
+            text = normalize_text(child.get_text(" ", strip=True))
+        else:
+            text = normalize_text(str(child))
+
+        if not text:
+            continue
+
+        if any(text.startswith(label) for label in STOP_LABELS):
+            break
+
+        if text.startswith("(formerly "):
+            continue
+
+        if METADATA_LABEL_PATTERN.match(text):
+            skip_metadata_value = True
+            continue
+
+        if skip_metadata_value:
+            skip_metadata_value = False
+            continue
+
+        description_parts.append(text)
+
+    return normalize_text(" ".join(description_parts))
+
+
 # Purpose: Collect course information by retrieving the raw html using BeuatifulSoup and save it as a JSON
 
 #----------------------------------
@@ -45,8 +119,11 @@ all_course_links = set()
 
 for page_url in catalog_page_urls:
     print(f"Fetching catalog page: {page_url}")
-    page_response = requests.get(page_url, timeout=15)
-    page_response.raise_for_status() # outputs errors
+    try:
+        page_response = fetch_page(page_url)
+    except requests.RequestException as error:
+        print(f"Skipped catalog page after retries: {page_url} ({error})")
+        continue
     page_soup = BeautifulSoup(page_response.text, "html.parser")
 
     course_anchors = page_soup.select('a[href*="preview_course_nopop.php"]')
@@ -63,8 +140,12 @@ print("There are:", len(course_links), "unique course links")
 # 3. Visit each course link and collect title, prereq, description
 
 def course_page_extract(course_url):
-    response = requests.get(course_url, timeout=15)
-    response.raise_for_status()
+    try:
+        response = fetch_page(course_url)
+    except requests.RequestException as error:
+        print(f"Skipped course page after retries: {course_url} ({error})")
+        return None
+
     soup = BeautifulSoup(response.text, "html.parser")
 
     title_tag = soup.select_one("h1#course_preview_title")
@@ -81,29 +162,23 @@ def course_page_extract(course_url):
         course_title = parts[1].strip()
 
     block = title_tag.find_parent("p")
+    description = extract_description(block, title_tag)
     prerequisites = ""
 
     if block:
-        block_text = " ".join(block.get_text(" ", strip=True).split())
+        block_text = normalize_text(block.get_text(" ", strip=True))
 
         if "Prerequisite(s):" in block_text:
             prerequisites = block_text.split("Prerequisite(s):", 1)[1].strip()
 
-            stop_labels = [
-                "Recommended Preparation:",
-                "Corequisite(s):",
-                "Antirequisite(s):",
-                "Note:",
-                "GNED Cluster",
-            ]
-
-            for label in stop_labels:
+            for label in STOP_LABELS[1:]:
                 if label in prerequisites:
                     prerequisites = prerequisites.split(label, 1)[0].strip()
 
     return {
         "course_code": course_code,
         "course_title": course_title,
+        "description": description,
         "prerequisites": prerequisites,
         "url": course_url,
     }

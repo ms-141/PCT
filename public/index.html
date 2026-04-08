@@ -95,6 +95,7 @@
         const API = '';  // same origin - Express serves this file
         const USER_ID = 1;  // temporary until auth is built
         let currentCourse = null;
+        let activeSelectRequestId = 0;
         let progress = {};  // course_code - status
 
         // Load user progress from the API on startup
@@ -166,12 +167,29 @@
             if (!e.target.closest('.search_bar')) suggestionsBox.style.display = 'none';
         });
 
+        async function fetchCourseTitle(code) {
+            try {
+                const res = await fetch(API + '/api/courses/' + encodeURIComponent(code));
+                if (!res.ok) {
+                    return { code: code, title: 'Not in catalog' };
+                }
+                const course = await res.json();
+                return { code: course.course_code, title: course.course_title || 'Not in catalog' };
+            } catch (err) {
+                return { code: code, title: 'Not in catalog' };
+            }
+        }
+
         // Select & Render (calls API for course detail) 
         async function selectCourse(code) {
+            const requestId = ++activeSelectRequestId;
+
             try {
                 const res = await fetch(API + '/api/courses/' + encodeURIComponent(code));
                 if (!res.ok) return;
                 const course = await res.json();
+
+                if (requestId !== activeSelectRequestId) return;
 
                 currentCourse = code;
 
@@ -182,47 +200,36 @@
                 // Center
                 centerCol.innerHTML = makeCard(course.course_code, course.course_title, true);
 
+                // Update info panel immediately so description never appears to disappear
+                updateInfoPanel(course);
+
                 // Left prerequisites
                 leftCol.innerHTML = '';
                 if (course.prereq_codes.length === 0) {
                     leftCol.innerHTML = '<p class="no_items">No prerequisites</p>';
-                }
-                for (const pCode of course.prereq_codes) {
-                    // Fetch each prereq's title
-                    try {
-                        const pRes = await fetch(API + '/api/courses/' + encodeURIComponent(pCode));
-                        if (pRes.ok) {
-                            const p = await pRes.json();
-                            leftCol.innerHTML += makeCard(p.course_code, p.course_title, false);
-                        } else {
-                            leftCol.innerHTML += makeCard(pCode, 'Not in catalog', false);
-                        }
-                    } catch (err) {
-                        leftCol.innerHTML += makeCard(pCode, 'Not in catalog', false);
-                    }
+                } else {
+                    const prereqDetails = await Promise.all(course.prereq_codes.map(fetchCourseTitle));
+
+                    if (requestId !== activeSelectRequestId) return;
+
+                    leftCol.innerHTML = prereqDetails.map(function(p) {
+                        return makeCard(p.code, p.title, false);
+                    }).join('');
                 }
 
                 // Right unlocks
                 rightCol.innerHTML = '';
                 if (course.unlocks.length === 0) {
                     rightCol.innerHTML = '<p class="no_items">No courses unlocked</p>';
-                }
-                for (const uCode of course.unlocks) {
-                    try {
-                        const uRes = await fetch(API + '/api/courses/' + encodeURIComponent(uCode));
-                        if (uRes.ok) {
-                            const u = await uRes.json();
-                            rightCol.innerHTML += makeCard(u.course_code, u.course_title, false);
-                        } else {
-                            rightCol.innerHTML += makeCard(uCode, '', false);
-                        }
-                    } catch (err) {
-                        rightCol.innerHTML += makeCard(uCode, '', false);
-                    }
-                }
+                } else {
+                    const unlockDetails = await Promise.all(course.unlocks.map(fetchCourseTitle));
 
-                // Update info panel
-                updateInfoPanel(course);
+                    if (requestId !== activeSelectRequestId) return;
+
+                    rightCol.innerHTML = unlockDetails.map(function(u) {
+                        return makeCard(u.code, u.title, false);
+                    }).join('');
+                }
 
                 // Redraw lines
                 requestAnimationFrame(function() {
@@ -253,6 +260,12 @@
             document.getElementById('infoTitle').textContent = 'Description of ' + course.course_code;
 
             var html = '<p><strong>' + course.course_title + '</strong></p>';
+
+            if (course.description) {
+                html += '<p>' + course.description + '</p>';
+            } else {
+                html += '<p>No description available.</p>';
+            }
 
             if (course.prerequisites_raw) {
                 html += '<p><strong>Prerequisites:</strong> ' + course.prerequisites_raw + '</p>';
