@@ -1,0 +1,210 @@
+{
+  "cs": {
+    "name": "Computer Science, B.Sc.",
+    "categories": {
+      "core": {
+        "label": "Required Core",
+        "courses": [
+          "COMP 1633",
+          "COMP 1701",
+          "COMP 2613",
+          "COMP 2631",
+          "COMP 2633",
+          "COMP 2655",
+          "COMP 2659",
+          "COMP 3309",
+          "COMP 3614",
+          "COMP 3649",
+          "COMP 3659",
+          "MATH 1200",
+          "MATH 1203",
+          "MATH 1271",
+          "MATH 2234",
+          "PHIL 1179"
+        ]
+      },
+      "option": {
+        "label": "Approved Options",
+        "courses": [
+          "COMP 3533",
+          "COMP 3553",
+          "COMP 3612",
+          "COMP 3625",
+          "COMP 3626",
+          "COMP 3654",
+          "COMP 4513",
+          "COMP 4555",
+          "COMP 4622",
+          "COMP 4630",
+          "COMP 4633",
+          "COMP 4635",
+          "COMP 5690",
+          "DATA 2721",
+          "MATH 2101",
+          "MATH 2200",
+          "MATH 3101",
+          "MATH 4111"
+        ]
+      },
+      "cognate_astronomy": {
+        "label": "Cognate: Astronomy",
+        "courses": [
+          "MATH 2200",
+          "PHYS 1201",
+          "ASTR 1301",
+          "ASTR 1303",
+          "ASTR 2107",
+          "ASTR 3107"
+        ]
+      },
+      "cognate_biology": {
+        "label": "Cognate: Biology",
+        "courses": [
+          "BIOL 1202",
+          "BIOL 1204"
+        ]
+      },
+      "cognate_chemistry": {
+        "label": "Cognate: Chemistry",
+        "courses": [
+          "CHEM 1201",
+          "CHEM 1202"
+        ]
+      },
+      "cognate_data_science": {
+        "label": "Cognate: Data Science",
+        "courses": [
+          "DATA 2721",
+          "MATH 2200",
+          "MATH 2303",
+          "MATH 2444",
+          "MATH 3454",
+          "MATH 4303"
+        ]
+      },
+      "cognate_gis": {
+        "label": "Cognate: GIS",
+        "courses": [
+          "GEOG 2553",
+          "GEOG 3553"
+        ]
+      },
+      "cognate_geoscience": {
+        "label": "Cognate: Geoscience",
+        "courses": [
+          "GEOL 1101",
+          "GEOL 1103"
+        ]
+      },
+      "cognate_mathematics": {
+        "label": "Cognate: Mathematics",
+        "courses": [
+          "MATH 2101",
+          "MATH 2200",
+          "MATH 2311",
+          "MATH 3101",
+          "MATH 3200",
+          "MATH 4111"
+        ]
+      },
+      "cognate_physics": {
+        "label": "Cognate: Physics",
+        "courses": [
+          "MATH 2200",
+          "PHYS 1201",
+          "PHYS 1202",
+          "PHYS 2201",
+          "PHYS 2203"
+        ]
+      }
+    }
+  },
+  "data_science": {
+    "name": "Data Science, B.Sc.",
+    "categories": {
+      "core": {
+        "label": "Required Core",
+        "courses": [
+          "COMP 1701",
+          "COMP 3309",
+          "COOP 0001",
+          "DATA 2402",
+          "DATA 2721",
+          "DATA 3453",
+          "DATA 3463",
+          "DATA 3464",
+          "DATA 3491",
+          "DATA 4465",
+          "MATH 1200",
+          "MATH 1203",
+          "MATH 2071",
+          "MATH 2234",
+          "MATH 2303",
+          "MATH 2444",
+          "MATH 3454",
+          "MGMT 3210",
+          "MGMT 3420",
+          "SCIE 3030"
+        ]
+      },
+      "concentration_cs": {
+        "label": "Concentration: CS & Big Data",
+        "courses": [
+          "COMP 4422",
+          "COMP 1633",
+          "COMP 2403",
+          "COMP 2511",
+          "COMP 2631",
+          "COMP 3533",
+          "COMP 3625",
+          "COMP 4635",
+          "DATA 4466",
+          "DATA 4734",
+          "DATA 5496"
+        ]
+      },
+      "concentration_finance": {
+        "label": "Concentration: Finance",
+        "courses": [
+          "ACCT 2121",
+          "FNCE 3227",
+          "FNCE 3228",
+          "FNCE 3302",
+          "DATA 5496",
+          "FNCE 3304",
+          "FNCE 4405",
+          "FNCE 4408"
+        ]
+      },
+      "concentration_logistics": {
+        "label": "Concentration: Logistics",
+        "courses": [
+          "LSCM 2201",
+          "LSCM 2301",
+          "LSCM 3403",
+          "LSCM 3203",
+          "LSCM 3303",
+          "LSCM 3305",
+          "LSCM 3402",
+          "LSCM 3407",
+          "DATA 5496"
+        ]
+      },
+      "concentration_math": {
+        "label": "Concentration: Math & Stats",
+        "courses": [
+          "MATH 2200",
+          "DATA 4734",
+          "DATA 5496",
+          "MATH 3101",
+          "MATH 3200",
+          "MATH 3372",
+          "MATH 3465",
+          "MATH 3552",
+          "MATH 4303",
+          "MATH 4553"
+        ]
+      }
+    }
+  }
+}

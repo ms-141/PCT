@@ -605,3 +605,61 @@ body
     cursor: pointer;
     text-decoration: underline;
 }
+
+/* ---- Program Filter (FR7) ---- */
+ 
+.filter_section
+{
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+}
+ 
+.filter_section h3
+{
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    color: #333;
+}
+ 
+.filter_section select
+{
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+}
+ 
+.category_filters
+{
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+ 
+.category_checkbox
+{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #444;
+    cursor: pointer;
+}
+ 
+.category_checkbox input
+{
+    margin: 0;
+}
+ 
+.cat_dot
+{
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    display: inline-block;
+}

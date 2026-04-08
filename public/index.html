@@ -116,6 +116,15 @@
             </div>
         </div>
 
+        <!-- Program Filter (FR7) -->
+        <div class="filter_section" id="filterSection">
+            <h3>Program Filter</h3>
+            <select id="programSelect" onchange="onProgramChange()">
+                <option value="">No filter</option>
+            </select>
+            <div id="categoryFilters" class="category_filters"></div>
+        </div>
+
         <!-- Legend (FR5) -->
         <div class="legend">
             <h3>Legend</h3>
@@ -125,6 +134,7 @@
                 <div class="legend_item"><span class="legend_dot planned"></span> Planned</div>
                 <div class="legend_item"><span class="legend_dot"></span> Not tracked</div>
             </div>
+            <div class="legend_items" id="categoryLegend" style="margin-top:8px;"></div>
         </div>
     </div>
 
@@ -135,6 +145,114 @@
         var currentCourse = null;
         var activeSelectRequestId = 0;
         var progress = {};
+
+        //  Program Filter State (FR7) 
+        var programsData = null;
+        var selectedProgram = '';
+        var activeCategories = {};  // category_key -> true/false
+
+        // Category colors for the border highlights
+        var categoryColors = {
+            core: '#2980b9',
+            option: '#8e44ad',
+            cognate_astronomy: '#e67e22',
+            cognate_biology: '#27ae60',
+            cognate_chemistry: '#c0392b',
+            cognate_data_science: '#16a085',
+            cognate_gis: '#d35400',
+            cognate_geoscience: '#7f8c8d',
+            cognate_mathematics: '#2c3e50',
+            cognate_physics: '#8e44ad',
+            concentration_cs: '#2980b9',
+            concentration_finance: '#e67e22',
+            concentration_logistics: '#c0392b',
+            concentration_math: '#16a085'
+        };
+
+        async function loadPrograms() {
+            try {
+                var res = await fetch('/programs.json');
+                programsData = await res.json();
+                buildProgramSelect();
+            } catch (err) {
+                console.log('Could not load programs.json:', err);
+            }
+        }
+
+        function buildProgramSelect() {
+            var select = document.getElementById('programSelect');
+            select.innerHTML = '<option value="">No filter</option>';
+            for (var key in programsData) {
+                var opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = programsData[key].name;
+                select.appendChild(opt);
+            }
+        }
+
+        function onProgramChange() {
+            selectedProgram = document.getElementById('programSelect').value;
+            activeCategories = {};
+            buildCategoryCheckboxes();
+            if (currentCourse) selectCourse(currentCourse);
+        }
+
+        function buildCategoryCheckboxes() {
+            var container = document.getElementById('categoryFilters');
+            var legendContainer = document.getElementById('categoryLegend');
+            container.innerHTML = '';
+            legendContainer.innerHTML = '';
+
+            if (!selectedProgram || !programsData[selectedProgram]) return;
+
+            var cats = programsData[selectedProgram].categories;
+            for (var key in cats) {
+                var color = categoryColors[key] || '#888';
+
+                // Checkbox
+                var label = document.createElement('label');
+                label.className = 'category_checkbox';
+
+                var input = document.createElement('input');
+                input.type = 'checkbox';
+                input.checked = true;
+                input.dataset.category = key;
+                input.addEventListener('change', function() {
+                    activeCategories[this.dataset.category] = this.checked;
+                    if (currentCourse) selectCourse(currentCourse);
+                });
+
+                var dot = document.createElement('span');
+                dot.className = 'cat_dot';
+                dot.style.backgroundColor = color;
+
+                var text = document.createTextNode(' ' + cats[key].label);
+
+                label.appendChild(input);
+                label.appendChild(dot);
+                label.appendChild(text);
+                container.appendChild(label);
+
+                activeCategories[key] = true;
+
+                // Legend entry
+                var legendItem = document.createElement('div');
+                legendItem.className = 'legend_item';
+                legendItem.innerHTML = '<span class="cat_dot" style="background-color:' + color + '"></span> ' + cats[key].label;
+                legendContainer.appendChild(legendItem);
+            }
+        }
+
+        function getCourseCategory(code) {
+            if (!selectedProgram || !programsData[selectedProgram]) return null;
+            var cats = programsData[selectedProgram].categories;
+            for (var key in cats) {
+                if (activeCategories[key] && cats[key].courses.indexOf(code) !== -1) {
+                    return key;
+                }
+            }
+            return null;
+        }
 
         //  Auth Init 
         async function initAuth() {
@@ -406,7 +524,7 @@
                 // Update info panel immediately
                 updateInfoPanel(course);
 
-                // Left - prerequisites
+                // Left  - prerequisites
                 leftCol.innerHTML = '';
                 if (course.prereq_codes.length === 0) {
                     leftCol.innerHTML = '<p class="no_items">No prerequisites</p>';
@@ -418,7 +536,7 @@
                     }).join('');
                 }
 
-                // Right - unlocks
+                // Right  - unlocks
                 rightCol.innerHTML = '';
                 if (course.unlocks.length === 0) {
                     rightCol.innerHTML = '<p class="no_items">No courses unlocked</p>';
@@ -444,7 +562,16 @@
             var status = progress[code] || '';
             var statusClass = status ? ' ' + status : '';
             var cls = isMain ? 'course_card main' + statusClass : 'course_card' + statusClass;
-            return '<div class="' + cls + '" onclick="cardClicked(\'' + code + '\')" data-code="' + code + '">' +
+
+            // Add category border color if program filter is active
+            var catStyle = '';
+            var category = getCourseCategory(code);
+            if (category) {
+                var color = categoryColors[category] || '#888';
+                catStyle = ' style="border-left: 5px solid ' + color + ';"';
+            }
+
+            return '<div class="' + cls + '"' + catStyle + ' onclick="cardClicked(\'' + code + '\')" data-code="' + code + '">' +
                        '<h2>' + code + '</h2>' +
                        '<p>' + title + '</p>' +
                    '</div>';
@@ -543,6 +670,7 @@
 
         window.addEventListener('load', function() {
             initAuth();
+            loadPrograms();
             selectCourse('COMP 1633');
         });
         window.addEventListener('resize', redrawLines);
