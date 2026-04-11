@@ -4,11 +4,11 @@
 import initSqlJs, { Database } from "sql.js";
 import fs from "fs";
 import path from "path";
-import { Course, Prerequisite, RawCourse, CourseDetail, UserProgress, CourseStatus, User} from "./types";
+import { Course, Prerequisite, RawCourse, CourseDetail, UserProgress, CourseStatus, User } from "./types";
 
 let db: Database;
 
-const DB_PATH = path.join(__dirname, "..", "pct.db");
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, "..", "pct.db");
 
 // Initialize Database
 
@@ -68,6 +68,10 @@ export async function initDatabase(): Promise<void> {
 }
 
 function saveDatabase(): void {
+    const dbDir = path.dirname(DB_PATH);
+    if (!fs.existsSync(dbDir)) {
+        fs.mkdirSync(dbDir, { recursive: true });
+    }
     const data = db.export();
     const buffer = Buffer.from(data);
     fs.writeFileSync(DB_PATH, buffer);
@@ -247,7 +251,7 @@ export function setProgress(userId: number, courseCode: string, status: CourseSt
 }
 
 // User Authentication Functions
- 
+
 // Create a new user, returns the user ID or null if email already exists
 export function createUser(email: string, username: string, passwordHash: string): number | null {
     try {
@@ -256,7 +260,7 @@ export function createUser(email: string, username: string, passwordHash: string
             [email, username, passwordHash, new Date().toISOString()]
         );
         saveDatabase();
- 
+
         // Get the ID of the newly created user
         const result = db.exec("SELECT MAX(id) FROM users WHERE email = ?", [email]);
         if (result.length > 0 && result[0].values.length > 0) {
@@ -267,18 +271,18 @@ export function createUser(email: string, username: string, passwordHash: string
         return null;
     }
 }
- 
+
 // Find a user by email (for login)
 export function getUserByEmail(email: string): User | null {
     const results = db.exec(
         "SELECT id, email, username, password_hash, created_at FROM users WHERE email = ?",
         [email]
     );
- 
+
     if (results.length === 0 || results[0].values.length === 0) {
         return null;
     }
- 
+
     const row = results[0].values[0];
     return {
         id: row[0] as number,
@@ -288,18 +292,18 @@ export function getUserByEmail(email: string): User | null {
         created_at: row[4] as string,
     };
 }
- 
+
 // Find a user by ID (for JWT verification)
 export function getUserById(userId: number): User | null {
     const results = db.exec(
         "SELECT id, email, username, password_hash, created_at FROM users WHERE id = ?",
         [userId]
     );
- 
+
     if (results.length === 0 || results[0].values.length === 0) {
         return null;
     }
- 
+
     const row = results[0].values[0];
     return {
         id: row[0] as number,

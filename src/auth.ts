@@ -4,10 +4,15 @@
 
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { randomBytes } from "crypto";
 import { Request, Response, NextFunction } from "express";
 
 // Secret key for signing JWT tokens
-const JWT_SECRET = "pct-secret-key";
+const envJwtSecret = process.env.JWT_SECRET;
+if (!envJwtSecret && process.env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET is required in production.");
+}
+const JWT_SECRET = envJwtSecret || randomBytes(32).toString("hex");
 const SALT_ROUNDS = 10;
 
 // Password Hashing

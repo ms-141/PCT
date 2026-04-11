@@ -7,6 +7,11 @@ dist/
 # Local database (teammates should generate their own from pct.json)
 pct.db
 
+# Environment variables
+.env
+.env.*
+!.env.example
+
 # OS-specific files
 .DS_Store
 Thumbs.db
