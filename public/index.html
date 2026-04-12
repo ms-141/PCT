@@ -52,43 +52,15 @@
         <div id="suggestions" class="suggestions"></div>
     </div>
 
-    <div class="card_container">
-        <div class="tree_container">
-            <svg class="lines"></svg>
-
-            <div class="tree">
-
-                <div class="left" id="leftCol">
-                    <div class="course_card">
-                        <h2>COMP 1631</h2>
-                        <p>Introduction to Computer Science I</p>
-                    </div>
-                    <div class="course_card">
-                        <h2>COMP 1701</h2>
-                        <p>Introduction to Problem Solving and Programming</p>
-                    </div>
-                </div>
-
-                <div class="center" id="centerCol">
-                    <div class="course_card main">
-                        <h2>COMP 1633</h2>
-                        <p>Introduction to Computer Science II</p>
-                    </div>
-                </div>
-
-                <div class="right" id="rightCol">
-                    <div class="course_card">
-                        <h2>COMP 2631</h2>
-                        <p>Information Structures I</p>
-                    </div>
-                    <div class="course_card">
-                        <h2>COMP 2655</h2>
-                        <p>Computing Machinery I</p>
-                    </div>
-                </div>
-
-            </div>
+    <div class="card_container" id="graphContainer">
+        <div class="graph_controls">
+            <button onclick="zoomIn()" title="Zoom In">+</button>
+            <button onclick="zoomOut()" title="Zoom Out">−</button>
+            <button onclick="resetZoom()" title="Reset View">⟲</button>
         </div>
+        <svg id="graphSvg">
+            <g id="graphGroup"></g>
+        </svg>
     </div>
 
     <div class="info_panel" id="infoPanel">
@@ -138,15 +110,16 @@
         </div>
     </div>
 
+    <script src="dagre.min.js"></script>
     <script>
-        //  Auth State 
+        // ---- Auth State ----
         var token = localStorage.getItem('pct_token') || '';
         var currentUser = null;
         var currentCourse = null;
         var activeSelectRequestId = 0;
         var progress = {};
 
-        //  Program Filter State (FR7) 
+        // ---- Program Filter State (FR7) ----
         var programsData = null;
         var selectedProgram = '';
         var activeCategories = {};  // category_key -> true/false
@@ -254,7 +227,7 @@
             return null;
         }
 
-        //  Auth Init 
+        // ---- Auth Init ----
         async function initAuth() {
             if (!token) { updateAuthUI(); return; }
 
@@ -303,7 +276,7 @@
             }
         }
 
-        //  Auth Modal 
+        // ---- Auth Modal ----
         function showAuthModal() {
             document.getElementById('authModal').style.display = 'flex';
             document.getElementById('authError').textContent = '';
@@ -393,7 +366,7 @@
             if (currentCourse) selectCourse(currentCourse);
         }
 
-        //  Progress (uses JWT auth) 
+        // ---- Progress (uses JWT auth) ----
         async function loadProgress() {
             if (!token) { progress = {}; return; }
             try {
@@ -433,7 +406,7 @@
             }
         }
 
-        //  Search 
+        // ---- Search ----
         var searchInput = document.getElementById('searchInput');
         var suggestionsBox = document.getElementById('suggestions');
 
@@ -488,13 +461,11 @@
             if (!e.target.closest('.search_bar')) suggestionsBox.style.display = 'none';
         });
 
-        //  Fetch course title helper 
+        // ---- Fetch course title helper ----
         async function fetchCourseTitle(code) {
             try {
                 var res = await fetch('/api/courses/' + encodeURIComponent(code));
-                if (!res.ok) {
-                    return { code: code, title: 'Not in catalog' };
-                }
+                if (!res.ok) return { code: code, title: 'Not in catalog' };
                 var course = await res.json();
                 return { code: course.course_code, title: course.course_title || 'Not in catalog' };
             } catch (err) {
@@ -502,79 +473,246 @@
             }
         }
 
-        //  Select & Render 
+        // ---- Zoom/Pan via viewBox ----
+        var viewBox = { x: 0, y: 0, w: 800, h: 600 };
+        var isPanning = false;
+        var panStart = { x: 0, y: 0 };
+        var panStartVB = { x: 0, y: 0 };
+
+        function setViewBox() {
+            var svg = document.getElementById('graphSvg');
+            svg.setAttribute('viewBox', viewBox.x + ' ' + viewBox.y + ' ' + viewBox.w + ' ' + viewBox.h);
+        }
+
+        function initZoomPan() {
+            var svg = document.getElementById('graphSvg');
+
+            svg.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                var factor = e.deltaY > 0 ? 1.15 : 0.85;
+
+                // Get mouse position in viewBox coordinates
+                var rect = svg.getBoundingClientRect();
+                var mx = (e.clientX - rect.left) / rect.width;
+                var my = (e.clientY - rect.top) / rect.height;
+
+                var newW = viewBox.w * factor;
+                var newH = viewBox.h * factor;
+
+                // Zoom toward mouse position
+                viewBox.x -= (newW - viewBox.w) * mx;
+                viewBox.y -= (newH - viewBox.h) * my;
+                viewBox.w = newW;
+                viewBox.h = newH;
+                setViewBox();
+            });
+
+            svg.addEventListener('mousedown', function(e) {
+                if (e.target.closest('.graph_node')) return;
+                isPanning = true;
+                panStart.x = e.clientX;
+                panStart.y = e.clientY;
+                panStartVB.x = viewBox.x;
+                panStartVB.y = viewBox.y;
+                svg.style.cursor = 'grabbing';
+                e.preventDefault();
+            });
+
+            window.addEventListener('mousemove', function(e) {
+                if (!isPanning) return;
+                var svg = document.getElementById('graphSvg');
+                var rect = svg.getBoundingClientRect();
+                // Convert pixel movement to viewBox movement
+                var dx = (e.clientX - panStart.x) * (viewBox.w / rect.width);
+                var dy = (e.clientY - panStart.y) * (viewBox.h / rect.height);
+                viewBox.x = panStartVB.x - dx;
+                viewBox.y = panStartVB.y - dy;
+                setViewBox();
+            });
+
+            window.addEventListener('mouseup', function() {
+                isPanning = false;
+                document.getElementById('graphSvg').style.cursor = 'grab';
+            });
+        }
+
+        function applyTransform() {
+            // No-op — we use viewBox now, not transforms
+        }
+
+        function zoomIn() {
+            var cx = viewBox.x + viewBox.w / 2;
+            var cy = viewBox.y + viewBox.h / 2;
+            viewBox.w *= 0.7;
+            viewBox.h *= 0.7;
+            viewBox.x = cx - viewBox.w / 2;
+            viewBox.y = cy - viewBox.h / 2;
+            setViewBox();
+        }
+
+        function zoomOut() {
+            var cx = viewBox.x + viewBox.w / 2;
+            var cy = viewBox.y + viewBox.h / 2;
+            viewBox.w *= 1.4;
+            viewBox.h *= 1.4;
+            viewBox.x = cx - viewBox.w / 2;
+            viewBox.y = cy - viewBox.h / 2;
+            setViewBox();
+        }
+
+        function resetZoom() {
+            if (currentCourse) selectCourse(currentCourse);
+        }
+
+        // ---- Graph Rendering with Dagre ----
+        var NODE_WIDTH = 180;
+        var NODE_HEIGHT = 70;
+
         async function selectCourse(code) {
             var requestId = ++activeSelectRequestId;
-
             try {
                 var res = await fetch('/api/courses/' + encodeURIComponent(code));
                 if (!res.ok) return;
                 var course = await res.json();
-
                 if (requestId !== activeSelectRequestId) return;
 
                 currentCourse = code;
-
-                var leftCol = document.getElementById('leftCol');
-                var centerCol = document.getElementById('centerCol');
-                var rightCol = document.getElementById('rightCol');
-
-                centerCol.innerHTML = makeCard(course.course_code, course.course_title, true);
-
-                // Update info panel immediately
                 updateInfoPanel(course);
 
-                // Left  - prerequisites
-                leftCol.innerHTML = '';
-                if (course.prereq_codes.length === 0) {
-                    leftCol.innerHTML = '<p class="no_items">No prerequisites</p>';
-                } else {
-                    var prereqDetails = await Promise.all(course.prereq_codes.map(fetchCourseTitle));
-                    if (requestId !== activeSelectRequestId) return;
-                    leftCol.innerHTML = prereqDetails.map(function(p) {
-                        return makeCard(p.code, p.title, false);
-                    }).join('');
-                }
+                var prereqDetails = await Promise.all(course.prereq_codes.map(fetchCourseTitle));
+                var unlockDetails = await Promise.all(course.unlocks.map(fetchCourseTitle));
+                if (requestId !== activeSelectRequestId) return;
 
-                // Right  - unlocks
-                rightCol.innerHTML = '';
-                if (course.unlocks.length === 0) {
-                    rightCol.innerHTML = '<p class="no_items">No courses unlocked</p>';
-                } else {
-                    var unlockDetails = await Promise.all(course.unlocks.map(fetchCourseTitle));
-                    if (requestId !== activeSelectRequestId) return;
-                    rightCol.innerHTML = unlockDetails.map(function(u) {
-                        return makeCard(u.code, u.title, false);
-                    }).join('');
-                }
+                // Build dagre graph
+                var g = new dagre.graphlib.Graph();
+                g.setGraph({ rankdir: 'LR', nodesep: 50, ranksep: 150, marginx: 60, marginy: 60 });
+                g.setDefaultEdgeLabel(function() { return {}; });
 
-                // Redraw lines
-                requestAnimationFrame(function() {
-                    requestAnimationFrame(redrawLines);
+                g.setNode(code, { label: code, title: course.course_title, width: NODE_WIDTH + 20, height: NODE_HEIGHT + 10, isMain: true });
+
+                prereqDetails.forEach(function(p) {
+                    g.setNode(p.code, { label: p.code, title: p.title, width: NODE_WIDTH, height: NODE_HEIGHT, isMain: false });
+                    g.setEdge(p.code, code);
                 });
 
+                unlockDetails.forEach(function(u) {
+                    g.setNode(u.code, { label: u.code, title: u.title, width: NODE_WIDTH, height: NODE_HEIGHT, isMain: false });
+                    g.setEdge(code, u.code);
+                });
+
+                dagre.layout(g);
+                renderGraph(g, code);
             } catch (err) {
                 console.error('Failed to load course:', err);
             }
         }
 
-        function makeCard(code, title, isMain) {
-            var status = progress[code] || '';
-            var statusClass = status ? ' ' + status : '';
-            var cls = isMain ? 'course_card main' + statusClass : 'course_card' + statusClass;
+        function renderGraph(g, centerCode) {
+            var group = document.getElementById('graphGroup');
+            group.innerHTML = '';
 
-            // Add category border color if program filter is active
-            var catStyle = '';
-            var category = getCourseCategory(code);
-            if (category) {
-                var color = categoryColors[category] || '#888';
-                catStyle = ' style="border-left: 5px solid ' + color + ';"';
-            }
+            // Arrowhead marker
+            var svg = document.getElementById('graphSvg');
+            var existingDefs = svg.querySelector('defs');
+            if (existingDefs) existingDefs.remove();
+            var defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            var marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+            marker.setAttribute('id', 'arrowhead');
+            marker.setAttribute('viewBox', '0 0 10 10');
+            marker.setAttribute('refX', '9');
+            marker.setAttribute('refY', '5');
+            marker.setAttribute('markerWidth', '8');
+            marker.setAttribute('markerHeight', '8');
+            marker.setAttribute('orient', 'auto-start-reverse');
+            var arrowPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            arrowPath.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
+            arrowPath.setAttribute('fill', '#999');
+            marker.appendChild(arrowPath);
+            defs.appendChild(marker);
+            svg.insertBefore(defs, svg.firstChild);
 
-            return '<div class="' + cls + '"' + catStyle + ' onclick="cardClicked(\'' + code + '\')" data-code="' + code + '">' +
-                       '<h2>' + code + '</h2>' +
-                       '<p>' + title + '</p>' +
-                   '</div>';
+            // Draw edges
+            g.edges().forEach(function(e) {
+                var edge = g.edge(e);
+                if (!edge.points || edge.points.length < 2) return;
+                var d = 'M ' + edge.points.map(function(p) { return p.x + ' ' + p.y; }).join(' L ');
+                var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', d);
+                path.setAttribute('fill', 'none');
+                path.setAttribute('stroke', '#999');
+                path.setAttribute('stroke-width', '2');
+                path.setAttribute('marker-end', 'url(#arrowhead)');
+                group.appendChild(path);
+            });
+
+            // Draw nodes
+            g.nodes().forEach(function(nodeId) {
+                var node = g.node(nodeId);
+                var x = node.x - node.width / 2;
+                var y = node.y - node.height / 2;
+                var status = progress[nodeId] || '';
+                var category = getCourseCategory(nodeId);
+                var catColor = category ? (categoryColors[category] || null) : null;
+
+                var fill = '#9b9b9b', textFill = '#000', stroke = '#777', sw = '1.5';
+                if (status === 'completed') { fill = '#27ae60'; textFill = '#fff'; stroke = '#219a52'; }
+                else if (status === 'in-progress') { fill = '#f1c40f'; textFill = '#333'; stroke = '#d4ac0d'; }
+                else if (status === 'planned') { fill = '#ecf0f1'; textFill = '#555'; stroke = '#bdc3c7'; }
+                if (node.isMain) { stroke = '#333'; sw = '3'; }
+
+                var ng = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                ng.setAttribute('class', 'graph_node');
+                ng.style.cursor = 'pointer';
+                ng.onclick = function() { cardClicked(nodeId); };
+
+                var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', x); rect.setAttribute('y', y);
+                rect.setAttribute('width', node.width); rect.setAttribute('height', node.height);
+                rect.setAttribute('rx', '8'); rect.setAttribute('fill', fill);
+                rect.setAttribute('stroke', stroke); rect.setAttribute('stroke-width', sw);
+                ng.appendChild(rect);
+
+                if (catColor) {
+                    var bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    bar.setAttribute('x', x); bar.setAttribute('y', y + 2);
+                    bar.setAttribute('width', '5'); bar.setAttribute('height', node.height - 4);
+                    bar.setAttribute('fill', catColor);
+                    ng.appendChild(bar);
+                }
+
+                var t1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                t1.setAttribute('x', node.x); t1.setAttribute('y', node.y - 8);
+                t1.setAttribute('text-anchor', 'middle'); t1.setAttribute('font-size', '16');
+                t1.setAttribute('font-weight', 'bold'); t1.setAttribute('fill', textFill);
+                t1.setAttribute('font-family', 'Arial, sans-serif');
+                t1.textContent = nodeId;
+                ng.appendChild(t1);
+
+                var t2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                t2.setAttribute('x', node.x); t2.setAttribute('y', node.y + 14);
+                t2.setAttribute('text-anchor', 'middle'); t2.setAttribute('font-size', '12');
+                t2.setAttribute('fill', textFill); t2.setAttribute('font-family', 'Arial, sans-serif');
+                var title = node.title || '';
+                if (title.length > 24) title = title.substring(0, 22) + '...';
+                t2.textContent = title;
+                ng.appendChild(t2);
+
+                ng.addEventListener('mouseenter', function() { rect.setAttribute('opacity', '0.85'); });
+                ng.addEventListener('mouseleave', function() { rect.setAttribute('opacity', '1'); });
+                group.appendChild(ng);
+            });
+
+            centerGraph(g);
+        }
+
+        function centerGraph(g) {
+            var graph = g.graph();
+            var pad = 40;
+            viewBox.x = -pad;
+            viewBox.y = -pad;
+            viewBox.w = (graph.width || 600) + pad * 2;
+            viewBox.h = (graph.height || 400) + pad * 2;
+            setViewBox();
         }
 
         function cardClicked(code) {
@@ -608,72 +746,22 @@
             }
 
             document.getElementById('infoDesc').innerHTML = html;
-
-            // Show progress section
             document.getElementById('progressSection').style.display = 'block';
             updateProgressSection();
 
             var currentStatus = progress[course.course_code] || '';
             document.querySelectorAll('.status_btn').forEach(function(btn) {
                 btn.classList.remove('active');
-                if (btn.dataset.status === currentStatus) {
-                    btn.classList.add('active');
-                }
-            });
-        }
-
-        //  SVG Lines 
-        function redrawLines() {
-            var svg = document.querySelector('.lines');
-            var treeContainer = document.querySelector('.tree_container');
-            var center = document.querySelector('.course_card.main');
-            var leftCards = document.querySelectorAll('.left .course_card');
-            var rightCards = document.querySelectorAll('.right .course_card');
-            if (!svg || !treeContainer || !center) return;
-
-            var bounds = treeContainer.getBoundingClientRect();
-            var centerRect = center.getBoundingClientRect();
-
-            var centerLeftX = centerRect.left - bounds.left;
-            var centerRightX = centerRect.right - bounds.left;
-            var centerY = centerRect.top - bounds.top + centerRect.height / 2;
-
-            svg.setAttribute('viewBox', '0 0 ' + bounds.width + ' ' + bounds.height);
-            svg.setAttribute('preserveAspectRatio', 'none');
-            svg.innerHTML = '';
-
-            var makeLine = function(x1, y1, x2, y2) {
-                var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', x1);
-                line.setAttribute('y1', y1);
-                line.setAttribute('x2', x2);
-                line.setAttribute('y2', y2);
-                line.setAttribute('stroke', 'black');
-                line.setAttribute('stroke-width', '2');
-                return line;
-            };
-
-            leftCards.forEach(function(card) {
-                var r = card.getBoundingClientRect();
-                var x2 = r.right - bounds.left;
-                var y2 = r.top - bounds.top + r.height / 2;
-                svg.appendChild(makeLine(centerLeftX, centerY, x2, y2));
-            });
-
-            rightCards.forEach(function(card) {
-                var r = card.getBoundingClientRect();
-                var x2 = r.left - bounds.left;
-                var y2 = r.top - bounds.top + r.height / 2;
-                svg.appendChild(makeLine(centerRightX, centerY, x2, y2));
+                if (btn.dataset.status === currentStatus) btn.classList.add('active');
             });
         }
 
         window.addEventListener('load', function() {
             initAuth();
             loadPrograms();
+            initZoomPan();
             selectCourse('COMP 1633');
         });
-        window.addEventListener('resize', redrawLines);
     </script>
 </body>
 </html>

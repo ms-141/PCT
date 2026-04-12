@@ -17,17 +17,19 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    position: relative;
 
     width: 50%;
     max-width: 1100px;
     margin: 10px 20px 0 auto; 
     
-    padding: 16px;
+    padding: 0;
     min-height: 70vh;
     border: 1px solid #ccc;
     border-radius: 12px;
     box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
     background-color: #ffffff;
+    overflow: hidden;
 }
 
 .info_panel
@@ -182,7 +184,7 @@ body
     margin: 0;
 }
 
-/* ---- Color-coded progress states ---- */
+/* ---- Color-coded progress states (FR5) ---- */
 
 .course_card.completed
 {
@@ -441,8 +443,8 @@ body
     border: 1px dashed #bdc3c7;
 }
 
-/* ---- Auth Bar ---- */
- 
+/* ---- Auth Bar (in header) ---- */
+
 .auth_bar
 {
     float: right;
@@ -451,13 +453,13 @@ body
     gap: 12px;
     margin-top: -28px;
 }
- 
+
 .auth_bar span
 {
     font-size: 14px;
     color: #ddd;
 }
- 
+
 .auth_bar button
 {
     padding: 6px 14px;
@@ -468,14 +470,14 @@ body
     color: white;
     cursor: pointer;
 }
- 
+
 .auth_bar button:hover
 {
     background: rgba(255,255,255,0.2);
 }
- 
+
 /* ---- Auth Modal ---- */
- 
+
 .modal_overlay
 {
     position: fixed;
@@ -489,7 +491,7 @@ body
     align-items: center;
     z-index: 200;
 }
- 
+
 .modal
 {
     background: white;
@@ -500,14 +502,14 @@ body
     position: relative;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
 }
- 
+
 .modal h2
 {
     margin: 0 0 16px 0;
     font-size: 22px;
     color: #333;
 }
- 
+
 .modal_close
 {
     position: absolute;
@@ -519,12 +521,12 @@ body
     cursor: pointer;
     color: #999;
 }
- 
+
 .modal_close:hover
 {
     color: #333;
 }
- 
+
 .auth_tabs
 {
     display: flex;
@@ -532,7 +534,7 @@ body
     margin-bottom: 16px;
     border-bottom: 2px solid #eee;
 }
- 
+
 .auth_tab
 {
     flex: 1;
@@ -545,14 +547,14 @@ body
     border-bottom: 2px solid transparent;
     margin-bottom: -2px;
 }
- 
+
 .auth_tab.active
 {
     color: #333;
     border-bottom-color: #333;
     font-weight: bold;
 }
- 
+
 .auth_input
 {
     width: 100%;
@@ -564,12 +566,12 @@ body
     box-sizing: border-box;
     margin-bottom: 10px;
 }
- 
+
 .auth_input:focus
 {
     border-color: rgb(100, 100, 100);
 }
- 
+
 .auth_submit
 {
     width: 100%;
@@ -583,12 +585,12 @@ body
     cursor: pointer;
     margin-top: 4px;
 }
- 
+
 .auth_submit:hover
 {
     background-color: rgb(80, 80, 80);
 }
- 
+
 .auth_error
 {
     color: #e74c3c;
@@ -596,7 +598,7 @@ body
     margin-top: 10px;
     text-align: center;
 }
- 
+
 .login_prompt
 {
     color: #888;
@@ -607,21 +609,21 @@ body
 }
 
 /* ---- Program Filter (FR7) ---- */
- 
+
 .filter_section
 {
     margin-top: 16px;
     padding-top: 12px;
     border-top: 1px solid #eee;
 }
- 
+
 .filter_section h3
 {
     margin: 0 0 8px 0;
     font-size: 16px;
     color: #333;
 }
- 
+
 .filter_section select
 {
     width: 100%;
@@ -633,14 +635,14 @@ body
     margin-bottom: 10px;
     box-sizing: border-box;
 }
- 
+
 .category_filters
 {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
- 
+
 .category_checkbox
 {
     display: flex;
@@ -650,16 +652,59 @@ body
     color: #444;
     cursor: pointer;
 }
- 
+
 .category_checkbox input
 {
     margin: 0;
 }
- 
+
 .cat_dot
 {
     width: 10px;
     height: 10px;
     border-radius: 2px;
     display: inline-block;
+}
+
+/* ---- Graph Visualization ---- */
+
+#graphSvg
+{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+}
+
+.graph_controls
+{
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 10;
+}
+
+.graph_controls button
+{
+    width: 32px;
+    height: 32px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: white;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+}
+
+.graph_controls button:hover
+{
+    background: #f0f0f0;
 }
