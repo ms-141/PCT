@@ -9,7 +9,7 @@ import { ProgressUpdate } from "./types";
 import { hashPassword, comparePassword, createToken, requireAuth } from "./auth";
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 let programsCache: Record<string, any> | null = null;
 

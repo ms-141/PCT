@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 
-const JWT_SECRET = "pct-secret-key";
+const JWT_SECRET = process.env.JWT_SECRET || "pct-secret-key";
 const SALT_ROUNDS = 10;
 
 // Password Hashing
