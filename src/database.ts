@@ -9,7 +9,7 @@ let db: Database;
 
 const DB_PATH = path.join(__dirname, "..", "pct.db");
 
-// Initialize Database
+// Database Init
 
 export async function initDatabase(): Promise<void> {
     const SQL = await initSqlJs();
@@ -75,16 +75,14 @@ function saveDatabase(): void {
 
 function ensureCourseDescriptionColumn(): void {
     const results = db.exec("PRAGMA table_info(courses)");
-    if (results.length === 0) {
-        return;
-    }
+    if (results.length === 0) return;
     const columns = results[0].values.map((row: any[]) => row[1] as string);
     if (!columns.includes("description")) {
         db.run("ALTER TABLE courses ADD COLUMN description TEXT");
     }
 }
 
-// Import from pct.json
+// Import
 
 export function importFromJson(jsonPath: string): number {
     const raw: RawCourse[] = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
@@ -127,7 +125,7 @@ export function importFromJson(jsonPath: string): number {
     return count;
 }
 
-// Extract course codes like "COMP 2631" from raw prerequisite text
+// Extracts course codes like "COMP 2631" from raw prerequisite text
 function parsePrereqCodes(rawString: string): string[] {
     if (!rawString) return [];
     const matches = rawString.match(/[A-Z]{2,4}\s+\d{4}/g);
@@ -135,7 +133,7 @@ function parsePrereqCodes(rawString: string): string[] {
     return [...new Set(matches)];
 }
 
-// Query Functions
+// Course Queries
 
 export function getCourseDetail(courseCode: string): CourseDetail | null {
     const stmt = db.prepare(
@@ -177,11 +175,7 @@ export function getCourseDetail(courseCode: string): CourseDetail | null {
     }
     unlockStmt.free();
 
-    return {
-        ...course,
-        prereq_codes: prereqCodes,
-        unlocks: unlocks,
-    };
+    return { ...course, prereq_codes: prereqCodes, unlocks };
 }
 
 export function searchCourses(query: string, limit: number = 10): Course[] {
@@ -207,7 +201,7 @@ export function searchCourses(query: string, limit: number = 10): Course[] {
     return courses;
 }
 
-// Progress Functions
+// Progress
 
 export function getProgress(userId: number): UserProgress[] {
     const stmt = db.prepare(
@@ -236,7 +230,7 @@ export function setProgress(userId: number, courseCode: string, status: CourseSt
         );
     } else {
         db.run(
-            `INSERT OR REPLACE INTO user_progress (user_id, course_code, status, updated_at) 
+            `INSERT OR REPLACE INTO user_progress (user_id, course_code, status, updated_at)
              VALUES (?, ?, ?, ?)`,
             [userId, courseCode, status, new Date().toISOString()]
         );
@@ -244,7 +238,7 @@ export function setProgress(userId: number, courseCode: string, status: CourseSt
     saveDatabase();
 }
 
-// ---- User Authentication Functions (FR3) ----
+// User Authentication
 
 export function createUser(email: string, username: string, passwordHash: string): number | null {
     try {
@@ -314,7 +308,7 @@ export function setUserMajor(userId: number, major: string): void {
     saveDatabase();
 }
 
-// ---- Deep Prerequisite / Unlock Tree (Feature 1) ----
+// Deep Prerequisite / Unlock Tree
 
 function buildPrereqTree(
     courseCode: string,
@@ -326,7 +320,6 @@ function buildPrereqTree(
     const detail = getCourseDetail(courseCode);
     const title = detail ? detail.course_title : courseCode;
 
-    // Stop expanding: already visited (cycle), max depth hit, or not in DB
     if (visited.has(courseCode) || maxDepth === 0 || !detail) {
         return { code: courseCode, title, children: [] };
     }
@@ -335,14 +328,12 @@ function buildPrereqTree(
 
     let childCodes: string[] = direction === 'prereqs' ? detail.prereq_codes : detail.unlocks;
 
-    // For unlock direction, optionally filter to major-relevant courses only
     if (direction === 'unlocks' && majorCodes !== null) {
         childCodes = childCodes.filter(c => majorCodes!.has(c));
     }
 
     const children: TreeNode[] = [];
     for (const childCode of childCodes) {
-        // Skip courses that don't exist in the DB (e.g. "Mathematics 30-1")
         const childDetail = getCourseDetail(childCode);
         if (!childDetail) continue;
         children.push(buildPrereqTree(childCode, direction, maxDepth - 1, visited, majorCodes));

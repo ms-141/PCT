@@ -11,7 +11,6 @@ import { hashPassword, comparePassword, createToken, requireAuth } from "./auth"
 const app = express();
 const PORT = 3000;
 
-// Cached programs.json data for major filtering
 let programsCache: Record<string, any> | null = null;
 
 function getMajorCodes(majorKey: string): Set<string> | null {
@@ -37,11 +36,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "..", "public")));
 
-// ==============================
-// Auth Routes (FR3)
-// ==============================
+// Auth Routes
 
-// Register a new account
 app.post("/api/auth/register", async (req: Request, res: Response) => {
     const { email, username, password } = req.body;
 
@@ -73,7 +69,6 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
     res.json({ success: true, token, user: { id: userId, email, username, major: '' } });
 });
 
-// Login
 app.post("/api/auth/login", async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
@@ -98,7 +93,6 @@ app.post("/api/auth/login", async (req: Request, res: Response) => {
     res.json({ success: true, token, user: { id: user.id, email: user.email, username: user.username, major: user.major } });
 });
 
-// Get current user info (verify token)
 app.get("/api/auth/me", requireAuth, (req: Request, res: Response) => {
     const user = getUserById(req.userId!);
     if (!user) {
@@ -108,7 +102,6 @@ app.get("/api/auth/me", requireAuth, (req: Request, res: Response) => {
     res.json({ id: user.id, email: user.email, username: user.username, major: user.major });
 });
 
-// Set user's major
 app.post("/api/auth/major", requireAuth, (req: Request, res: Response) => {
     const { major } = req.body;
     if (major === undefined) {
@@ -119,11 +112,8 @@ app.post("/api/auth/major", requireAuth, (req: Request, res: Response) => {
     res.json({ success: true, major });
 });
 
-// ==============================
-// Course Routes (public)
-// ==============================
+// Course Routes
 
-// Batch fetch course titles — POST /api/courses/batch  body: { codes: ["COMP 2631", "COMP 1633"] }
 app.post("/api/courses/batch", (req: Request, res: Response) => {
     const { codes } = req.body;
     if (!codes || !Array.isArray(codes)) { res.json({}); return; }
@@ -141,7 +131,6 @@ app.get("/api/courses/search", (req: Request, res: Response) => {
     res.json(searchCourses(query));
 });
 
-// Deep prerequisite/unlock tree  GET /api/courses/:code/tree?depth=4&major=cs
 app.get("/api/courses/:code/tree", (req: Request, res: Response) => {
     const code = req.params.code as string;
     const depth = Math.min(Math.max(parseInt((req.query.depth as string) || "4") || 4, 1), 6);
@@ -167,9 +156,7 @@ app.get("/api/courses/:code", (req: Request, res: Response) => {
     res.json(course);
 });
 
-// ==============================
-// Progress Routes (protected — requires login)
-// ==============================
+// Progress Routes
 
 app.get("/api/progress", requireAuth, (req: Request, res: Response) => {
     res.json(getProgress(req.userId!));
@@ -184,7 +171,6 @@ app.post("/api/progress", requireAuth, (req: Request, res: Response) => {
     res.json({ success: true, course_code, status });
 });
 
-// Import route
 app.post("/api/import", (req: Request, res: Response) => {
     const jsonPath = path.join(__dirname, "..", "pct.json");
     try {
@@ -195,9 +181,7 @@ app.post("/api/import", (req: Request, res: Response) => {
     }
 });
 
-// ==============================
 // Start Server
-// ==============================
 
 async function start() {
     await initDatabase();

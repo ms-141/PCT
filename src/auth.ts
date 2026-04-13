@@ -1,12 +1,9 @@
 // Authentication middleware and helpers
 
-// Handles password hashing (bcrypt) and JWT token creation/verification.
-
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 
-// Secret key for signing JWT tokens
 const JWT_SECRET = "pct-secret-key";
 const SALT_ROUNDS = 10;
 
@@ -44,7 +41,6 @@ declare global {
     }
 }
 
-// Checks for a valid JWT token
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
     const authHeader = req.headers.authorization;
 

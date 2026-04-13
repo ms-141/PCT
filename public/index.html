@@ -47,7 +47,7 @@
         </div>
     </div>
 
-    <!-- ===== VIEW: Prereq Tree ===== -->
+    <!--  VIEW: Prereq Tree  -->
     <div class="view" id="view_tree">
         <div class="search_bar">
             <input type="text" id="searchInput" placeholder="Search by course code (e.g. COMP 2631)" autocomplete="off">
@@ -96,7 +96,7 @@
         </div>
     </div>
 
-    <!-- ===== VIEW: Major ===== -->
+    <!--  VIEW: Major  -->
     <div class="view" id="view_major" style="display:none;">
         <div class="major_header">
             <label>Select your major:
@@ -111,7 +111,7 @@
         </div>
     </div>
 
-    <!-- ===== VIEW: GNEDs ===== -->
+    <!--  VIEW: GNEDs  -->
     <div class="view" id="view_gned" style="display:none;">
         <div class="gned_header">
             <h2>General Education Requirements</h2>
@@ -122,7 +122,7 @@
 
     <script src="dagre.min.js"></script>
     <script>
-        // ===== THEME =====
+        // Theme
         var savedTheme = localStorage.getItem('pct_theme') || 'light';
         document.body.setAttribute('data-theme', savedTheme);
         updateThemeIcon();
@@ -138,7 +138,7 @@
             if (btn) btn.textContent = document.body.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
         }
 
-        // ===== STATE =====
+        // State
         var token = localStorage.getItem('pct_token') || '';
         var currentUser = null;
         var currentCourse = null;
@@ -147,7 +147,7 @@
         var programsData = null;
         var currentView = 'tree';
 
-        // ===== TABS =====
+        // Tabs
         function switchView(view) {
             currentView = view;
             document.querySelectorAll('.view').forEach(function(v) { v.style.display = 'none'; });
@@ -158,7 +158,7 @@
             if (view === 'gned') renderGnedView();
         }
 
-        // ===== AUTH =====
+        // Auth
         async function initAuth() {
             if (!token) { updateAuthUI(); return; }
             try {
@@ -176,7 +176,6 @@
             if (currentUser) {
                 s.textContent = 'Welcome, ' + currentUser.username;
                 b.textContent = 'Logout'; b.onclick = doLogout;
-                // Set major dropdown if saved
                 if (currentUser.major) document.getElementById('majorSelect').value = currentUser.major;
             } else {
                 s.textContent = 'Not logged in';
@@ -228,7 +227,7 @@
         }
         function doLogout() { token = ''; currentUser = null; progress = {}; localStorage.removeItem('pct_token'); updateAuthUI(); if (currentCourse) selectCourse(currentCourse); }
 
-        // ===== PROGRESS =====
+        // Progress
         async function loadProgress() {
             if (!token) { progress = {}; return; }
             try {
@@ -246,7 +245,6 @@
                 selectCourse(currentCourse);
             } catch (err) { console.error('Failed to save progress:', err); }
         }
-        // Quick status set from course list views
         async function setStatusFor(code, status) {
             if (!currentUser) { showAuthModal(); return; }
             try {
@@ -257,7 +255,7 @@
             } catch (err) { console.error('Failed:', err); }
         }
 
-        // ===== PROGRAMS =====
+        // Programs
         async function loadPrograms() {
             try {
                 var res = await fetch('/programs.json');
@@ -285,11 +283,10 @@
                 s.textContent = '✓ Saved'; setTimeout(function() { s.textContent = ''; }, 2000);
             }
             renderMajorView();
-            // Re-render tree with updated major filter if a course is loaded
             if (currentView === 'tree' && currentCourse) selectCourse(currentCourse);
         }
 
-        // ===== MAJOR VIEW =====
+        // Major View
         async function renderMajorView() {
             var container = document.getElementById('majorContent');
             var majorKey = document.getElementById('majorSelect').value;
@@ -299,7 +296,6 @@
             }
             var prog = programsData[majorKey];
 
-            // Collect all course codes for batch fetch
             var allCodes = [];
             for (var catKey in prog.categories) {
                 allCodes = allCodes.concat(prog.categories[catKey].courses);
@@ -315,7 +311,7 @@
             container.innerHTML = html;
         }
 
-        // ===== GNED VIEW =====
+        // GNED View
         async function renderGnedView() {
             var container = document.getElementById('gnedContent');
             if (!programsData || !programsData._gned) {
@@ -324,7 +320,6 @@
             }
             var gned = programsData._gned.structure;
 
-            // Batch fetch all GNED course titles
             var allCodes = [];
             ['foundation', 'tier2', 'tier3'].forEach(function(tierKey) {
                 for (var ck in gned[tierKey].clusters) {
@@ -349,7 +344,7 @@
             container.innerHTML = html;
         }
 
-        // ===== SHARED: Collapsible Category =====
+        // Collapsible Category
         function renderCollapsibleCategory(id, label, note, courses, completedCount) {
             var total = courses.length;
             var badge = completedCount > 0 ? ' <span class="cat_badge">' + completedCount + '/' + total + '</span>' : ' <span class="cat_badge cat_badge_dim">' + total + ' courses</span>';
@@ -378,7 +373,7 @@
             arrow.textContent = isOpen ? '▶' : '▼';
         }
 
-        // ===== SHARED: Course Row =====
+        // Course Row
         function renderCourseRow(code) {
             var status = progress[code] || '';
             var statusClass = status ? ' status_' + status : '';
@@ -404,7 +399,6 @@
                 '</div>';
         }
 
-        // Navigate to tree view for a course
         function goToTree(code) {
             document.querySelectorAll('.nav_tab').forEach(function(t) { t.classList.remove('active'); });
             document.querySelectorAll('.nav_tab')[0].classList.add('active');
@@ -415,12 +409,10 @@
             selectCourse(code);
         }
 
-        // ===== Batch Title Loading =====
+        // Batch Title Loading
         var titleCache = {};
         async function batchLoadTitles(codes) {
-            // Filter out already cached
             var needed = codes.filter(function(c) { return !titleCache[c]; });
-            // Deduplicate
             needed = needed.filter(function(c, i) { return needed.indexOf(c) === i; });
             if (needed.length === 0) return;
 
@@ -439,7 +431,7 @@
             }
         }
 
-        // ===== SEARCH =====
+        // Search
         var searchInput = document.getElementById('searchInput');
         var suggestionsBox = document.getElementById('suggestions');
         searchInput.addEventListener('input', async function() {
@@ -462,7 +454,7 @@
         searchInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') { suggestionsBox.style.display = 'none'; selectCourse(this.value.trim().toUpperCase()); } });
         document.addEventListener('click', function(e) { if (!e.target.closest('.search_bar')) suggestionsBox.style.display = 'none'; });
 
-        // ===== GRAPH =====
+        // Graph
         var viewBox = { x: 0, y: 0, w: 800, h: 600 };
         var isPanning = false; var panStart = { x: 0, y: 0 }; var panStartVB = { x: 0, y: 0 };
         function setViewBox() { document.getElementById('graphSvg').setAttribute('viewBox', viewBox.x + ' ' + viewBox.y + ' ' + viewBox.w + ' ' + viewBox.h); }
@@ -489,7 +481,6 @@
         function zoomOut() { var cx = viewBox.x + viewBox.w/2, cy = viewBox.y + viewBox.h/2; viewBox.w *= 1.4; viewBox.h *= 1.4; viewBox.x = cx - viewBox.w/2; viewBox.y = cy - viewBox.h/2; setViewBox(); }
         function resetZoom() { if (currentCourse) selectCourse(currentCourse); }
 
-        // Show loading placeholder in graph area
         function showGraphLoading() {
             var group = document.getElementById('graphGroup');
             group.innerHTML = '';
@@ -502,7 +493,6 @@
             viewBox = { x: 0, y: 0, w: 800, h: 600 }; setViewBox();
         }
 
-        // Walk the prereq tree and record each node's direct prereq codes
         function buildPrereqsOfMap(node, prereqsOf) {
             if (node.children.length > 0) {
                 if (!prereqsOf[node.code]) prereqsOf[node.code] = [];
@@ -513,15 +503,11 @@
             node.children.forEach(function(child) { buildPrereqsOfMap(child, prereqsOf); });
         }
 
-        // Populate titleCache from a tree response (avoids extra round-trips later)
         function cacheTreeTitles(node) {
             if (node.title) titleCache[node.code] = node.title;
             node.children.forEach(cacheTreeTitles);
         }
 
-        // Recursively add nodes and edges from a tree branch into the dagre graph.
-        // direction 'prereq': child→node edges (prereq flows left)
-        // direction 'unlock': node→child edges (unlock flows right)
         function addTreeNodes(g, node, direction) {
             if (!g.hasNode(node.code)) {
                 g.setNode(node.code, { label: node.code, title: node.title, width: NODE_WIDTH, height: NODE_HEIGHT, isMain: false });
@@ -539,7 +525,6 @@
             });
         }
 
-        // Return 'blocked', 'warning', or null (eligible / not applicable)
         function getEligibility(code, prereqsOf) {
             if (!currentUser) return null;
             var status = progress[code] || '';
@@ -575,26 +560,19 @@
                 updateInfoPanel(course);
                 if (!treeData) return;
 
-                // Cache all titles from tree for use in major/gned views
                 cacheTreeTitles(treeData.prereqs);
                 cacheTreeTitles(treeData.unlocks);
 
-                // Build map: code → [direct prereq codes] for eligibility checks
                 var prereqsOf = {};
                 buildPrereqsOfMap(treeData.prereqs, prereqsOf);
 
-                // Build dagre graph
                 var g = new dagre.graphlib.Graph();
                 g.setGraph({ rankdir: 'LR', nodesep: 50, ranksep: 150, marginx: 60, marginy: 60 });
                 g.setDefaultEdgeLabel(function() { return {}; });
 
-                // Main node in centre
                 g.setNode(code, { label: code, title: treeData.course_title, width: NODE_WIDTH + 20, height: NODE_HEIGHT + 10, isMain: true });
 
-                // Left side: full prereq chain
                 addTreeNodes(g, treeData.prereqs, 'prereq');
-
-                // Right side: full unlock chain (already major-filtered by server)
                 addTreeNodes(g, treeData.unlocks, 'unlock');
 
                 dagre.layout(g);
@@ -634,7 +612,6 @@
                 else if (status === 'in-progress') { fill = '#f1c40f'; tf = '#333'; stroke = '#d4ac0d'; }
                 else if (status === 'planned') { fill = isDark ? '#2c3e50' : '#ecf0f1'; tf = isDark ? '#bbb' : '#555'; stroke = isDark ? '#4a6278' : '#bdc3c7'; }
                 if (node.isMain) { stroke = isDark ? '#ddd' : '#333'; sw = '3'; }
-                // Eligibility overlay — only for non-main, untracked nodes
                 if (!node.isMain) {
                     var elig = getEligibility(nid, prereqsOf);
                     if (elig === 'blocked') {
@@ -681,7 +658,7 @@
             document.querySelectorAll('.status_btn').forEach(function(btn) { btn.classList.remove('active'); if (btn.dataset.status === cs) btn.classList.add('active'); });
         }
 
-        // ===== INIT =====
+        // Init
         window.addEventListener('load', function() {
             initAuth();
             loadPrograms();
