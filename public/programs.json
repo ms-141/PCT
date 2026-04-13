@@ -21,7 +21,8 @@
           "MATH 1271",
           "MATH 2234",
           "PHIL 1179"
-        ]
+        ],
+        "note": "All 16 courses required"
       },
       "option": {
         "label": "Approved Options",
@@ -44,7 +45,8 @@
           "MATH 2200",
           "MATH 3101",
           "MATH 4111"
-        ]
+        ],
+        "note": "Complete 6 courses. At least 3 must be numbered 4000 or higher."
       },
       "cognate_astronomy": {
         "label": "Cognate: Astronomy",
@@ -55,21 +57,24 @@
           "ASTR 1303",
           "ASTR 2107",
           "ASTR 3107"
-        ]
+        ],
+        "note": "Pick this cognate: complete all 4 courses (2 required + 2 from options)"
       },
       "cognate_biology": {
         "label": "Cognate: Biology",
         "courses": [
           "BIOL 1202",
           "BIOL 1204"
-        ]
+        ],
+        "note": "2 required + 2 additional BIOL at 2000-level or higher"
       },
       "cognate_chemistry": {
         "label": "Cognate: Chemistry",
         "courses": [
           "CHEM 1201",
           "CHEM 1202"
-        ]
+        ],
+        "note": "2 required + 2 additional CHEM at 2000-level or higher"
       },
       "cognate_data_science": {
         "label": "Cognate: Data Science",
@@ -80,21 +85,24 @@
           "MATH 2444",
           "MATH 3454",
           "MATH 4303"
-        ]
+        ],
+        "note": "Complete 4 of these courses"
       },
       "cognate_gis": {
         "label": "Cognate: GIS",
         "courses": [
           "GEOG 2553",
           "GEOG 3553"
-        ]
+        ],
+        "note": "2 required + 2 additional GEOG courses"
       },
       "cognate_geoscience": {
         "label": "Cognate: Geoscience",
         "courses": [
           "GEOL 1101",
           "GEOL 1103"
-        ]
+        ],
+        "note": "2 required + 2 additional GEOL at 2000-level or higher"
       },
       "cognate_mathematics": {
         "label": "Cognate: Mathematics",
@@ -105,7 +113,8 @@
           "MATH 3101",
           "MATH 3200",
           "MATH 4111"
-        ]
+        ],
+        "note": "Complete 4 of these courses"
       },
       "cognate_physics": {
         "label": "Cognate: Physics",
@@ -115,7 +124,8 @@
           "PHYS 1202",
           "PHYS 2201",
           "PHYS 2203"
-        ]
+        ],
+        "note": "3 required + 1 from options"
       }
     }
   },
@@ -145,7 +155,8 @@
           "MGMT 3210",
           "MGMT 3420",
           "SCIE 3030"
-        ]
+        ],
+        "note": "All 20 courses required + 1 from elective group"
       },
       "concentration_cs": {
         "label": "Concentration: CS & Big Data",
@@ -161,7 +172,8 @@
           "DATA 4466",
           "DATA 4734",
           "DATA 5496"
-        ]
+        ],
+        "note": "Take COMP 4422 + choose 5 from the list"
       },
       "concentration_finance": {
         "label": "Concentration: Finance",
@@ -174,7 +186,8 @@
           "FNCE 3304",
           "FNCE 4405",
           "FNCE 4408"
-        ]
+        ],
+        "note": "Take 4 required + choose 2 from options"
       },
       "concentration_logistics": {
         "label": "Concentration: Logistics",
@@ -188,7 +201,8 @@
           "LSCM 3402",
           "LSCM 3407",
           "DATA 5496"
-        ]
+        ],
+        "note": "Take 3 required + choose 3 from options"
       },
       "concentration_math": {
         "label": "Concentration: Math & Stats",
@@ -203,7 +217,269 @@
           "MATH 3552",
           "MATH 4303",
           "MATH 4553"
-        ]
+        ],
+        "note": "Take MATH 2200 + choose 5 from the list"
+      }
+    }
+  },
+  "_gned": {
+    "name": "General Education Requirements",
+    "structure": {
+      "foundation": {
+        "label": "Foundation Tier (4 courses, one per cluster)",
+        "clusters": {
+          "cluster1": {
+            "label": "Cluster 1: Numeracy & Scientific Literacy",
+            "courses": [
+              "GNED 1101",
+              "GNED 1102",
+              "GNED 1103"
+            ]
+          },
+          "cluster2": {
+            "label": "Cluster 2: Values, Beliefs & Identity",
+            "courses": [
+              "GNED 1201",
+              "GNED 1202",
+              "GNED 1203"
+            ]
+          },
+          "cluster3": {
+            "label": "Cluster 3: Community & Society",
+            "courses": [
+              "GNED 1301",
+              "GNED 1303"
+            ]
+          },
+          "cluster4": {
+            "label": "Cluster 4: Communication",
+            "courses": [
+              "GNED 1401",
+              "GNED 1403",
+              "GNED 1404"
+            ]
+          }
+        }
+      },
+      "tier2": {
+        "label": "Tier 2 (3 courses, max one per cluster)",
+        "note": "B.Sc. students: select from clusters other than Numeracy & Scientific Literacy",
+        "clusters": {
+          "cluster1": {
+            "label": "Cluster 1: Numeracy & Scientific Literacy",
+            "courses": [
+              "ANTH 1101",
+              "ASTR 1101",
+              "ASTR 1103",
+              "ASTR 1301",
+              "ASTR 1303",
+              "BIOL 1205",
+              "BIOL 1216",
+              "CHEM 2111",
+              "CHEM 2211",
+              "CHEM 2221",
+              "COMP 1001",
+              "COMP 1103",
+              "COMP 1104",
+              "COMP 1615",
+              "COMP 2002",
+              "GEOG 1101",
+              "GEOG 1105",
+              "GEOL 1101",
+              "GEOL 1103",
+              "GEOL 1109",
+              "MATH 1102",
+              "MATH 1103",
+              "MATH 1200",
+              "MATH 1203",
+              "MATH 1205",
+              "MATH 1211",
+              "MATH 1224",
+              "MATH 1271",
+              "MATH 2101",
+              "PHIL 1179",
+              "PHYS 1104",
+              "PHYS 1201",
+              "PHYS 1202"
+            ]
+          },
+          "cluster2": {
+            "label": "Cluster 2: Values, Beliefs & Identity",
+            "courses": [
+              "ARTH 1101",
+              "ARTH 1103",
+              "ARTH 2205",
+              "ARTH 2207",
+              "ARTH 2209",
+              "ENGL 1151",
+              "ENGL 1152",
+              "ENGL 2210",
+              "ENGL 2211",
+              "GNED 2203",
+              "HIST 1101",
+              "HIST 1103",
+              "HIST 2204",
+              "HIST 2205",
+              "HUMN 1109",
+              "HUMN 1111",
+              "JPNS 2209",
+              "PHIL 1101",
+              "PHIL 1149",
+              "PHIL 1175",
+              "PHIL 2204",
+              "PHIL 2216",
+              "PSYC 1104",
+              "PSYC 1105",
+              "RELS 1101",
+              "RELS 1103",
+              "RELS 1104",
+              "RELS 1105"
+            ]
+          },
+          "cluster3": {
+            "label": "Cluster 3: Community & Society",
+            "courses": [
+              "ANTH 1103",
+              "ANTH 1105",
+              "ANTH 1106",
+              "CNST 2202",
+              "CNST 2221",
+              "ECON 1101",
+              "ECON 1103",
+              "FREN 2250",
+              "GEOG 1103",
+              "GNED 2402",
+              "INST 2710",
+              "LAST 1101",
+              "MECU 1101",
+              "PLSC 1101",
+              "PLSC 1103",
+              "PLSC 2210",
+              "PLSC 2211",
+              "SLGY 1101",
+              "SLGY 1103",
+              "SPAN 2219",
+              "WGST 1101",
+              "WGST 2202",
+              "WGST 2205"
+            ]
+          },
+          "cluster4": {
+            "label": "Cluster 4: Communication",
+            "courses": [
+              "BCMK 2111",
+              "CMCL 2201",
+              "CMCL 2203",
+              "ENGL 2205",
+              "ENGL 2263",
+              "ENGL 2295",
+              "INFO 2650",
+              "MGMT 3210"
+            ]
+          }
+        }
+      },
+      "tier3": {
+        "label": "Tier 3 (3 courses, from at least 2 clusters)",
+        "clusters": {
+          "cluster1": {
+            "label": "Cluster 1: Numeracy & Scientific Literacy",
+            "courses": [
+              "ASTR 2105",
+              "BIOL 2102",
+              "BIOL 2309",
+              "BIOL 3207",
+              "CHEM 3802",
+              "COMP 2511",
+              "GEOG 2107",
+              "GEOG 2553",
+              "GEOL 2107",
+              "GEOL 2151",
+              "GEOL 2153",
+              "GNED 3010",
+              "GNED 3101",
+              "MATH 1202",
+              "MATH 2200",
+              "MATH 2303",
+              "MATH 3200",
+              "PHIL 2267",
+              "PHYS 2103",
+              "SCIE 3030"
+            ]
+          },
+          "cluster2": {
+            "label": "Cluster 2: Values, Beliefs & Identity",
+            "courses": [
+              "ARTH 3309",
+              "ARTH 3311",
+              "ARTH 3313",
+              "ARTH 3317",
+              "ENGL 2248",
+              "ENGL 2249",
+              "ENGL 2253",
+              "ENGL 2293",
+              "ENGL 3312",
+              "ENGL 3313",
+              "ENGL 3353",
+              "FILM 2270",
+              "FILM 3370",
+              "GNED 3201",
+              "HIST 3304",
+              "HIST 3361",
+              "HIST 4402",
+              "PHIL 2211",
+              "PHIL 2221",
+              "PHIL 2263",
+              "PHIL 2281",
+              "PHIL 2291",
+              "PHIL 3307",
+              "PHIL 3333",
+              "PHIL 3345",
+              "PHIL 3350",
+              "PSYC 2235",
+              "PSYC 2245",
+              "PSYC 2265",
+              "PSYC 2283",
+              "PSYC 2285",
+              "RELS 2209",
+              "RELS 2212",
+              "RELS 2243",
+              "RELS 2251",
+              "RELS 2279"
+            ]
+          },
+          "cluster3": {
+            "label": "Cluster 3: Community & Society",
+            "courses": [
+              "ANTH 2241",
+              "CNST 2233",
+              "ECON 2101",
+              "ECON 2103",
+              "GEOG 2445",
+              "GNED 3030",
+              "HIST 3346",
+              "HIST 3356",
+              "PLSC 2227",
+              "PLSC 3411",
+              "SLGY 2201",
+              "SLGY 2241",
+              "SLGY 3301",
+              "WGST 3301"
+            ]
+          },
+          "cluster4": {
+            "label": "Cluster 4: Communication",
+            "courses": [
+              "CMCL 3301",
+              "CMCL 3303",
+              "ENGL 3372",
+              "ENGL 3397",
+              "INFO 3650",
+              "MGMT 3276",
+              "MGMT 4431"
+            ]
+          }
+        }
       }
     }
   }

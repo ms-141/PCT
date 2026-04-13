@@ -4,18 +4,23 @@
     <title>PCT Website</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
     <div class="header">
         <h1>Prerequisite Checker Tree <span class="subtitle">
-            The place to check course descriptions, 
-            prerequisites, and possible course paths.
+            The place to check course descriptions, prerequisites, and possible course paths.
         </span></h1>
-        <!-- Auth bar in header -->
         <div class="auth_bar" id="authBar">
+            <button class="theme_toggle" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
             <span id="authStatus">Not logged in</span>
             <button id="authBtn" onclick="showAuthModal()">Login / Register</button>
         </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="nav_tabs">
+        <button class="nav_tab active" onclick="switchView('tree')">Prereq Tree</button>
+        <button class="nav_tab" onclick="switchView('major')">Major</button>
+        <button class="nav_tab" onclick="switchView('gned')">GNEDs</button>
     </div>
 
     <!-- Auth Modal -->
@@ -23,269 +28,170 @@
         <div class="modal">
             <button class="modal_close" onclick="hideAuthModal()">✕</button>
             <h2 id="authModalTitle">Login</h2>
-
             <div class="auth_tabs">
                 <button class="auth_tab active" id="tabLogin" onclick="switchTab('login')">Login</button>
                 <button class="auth_tab" id="tabRegister" onclick="switchTab('register')">Register</button>
             </div>
-
             <div id="loginForm">
                 <input type="email" id="loginEmail" placeholder="Email" class="auth_input">
                 <input type="password" id="loginPassword" placeholder="Password" class="auth_input">
                 <button class="auth_submit" onclick="doLogin()">Login</button>
             </div>
-
             <div id="registerForm" style="display:none;">
                 <input type="text" id="regUsername" placeholder="Username" class="auth_input">
                 <input type="email" id="regEmail" placeholder="Email" class="auth_input">
                 <input type="password" id="regPassword" placeholder="Password (min 6 chars)" class="auth_input">
                 <button class="auth_submit" onclick="doRegister()">Create Account</button>
             </div>
-
             <p class="auth_error" id="authError"></p>
         </div>
     </div>
 
-    <!-- Search bar -->
-    <div class="search_bar">
-        <input type="text" id="searchInput" placeholder="Search by course code (e.g. COMP 2631)" autocomplete="off">
-        <div id="suggestions" class="suggestions"></div>
-    </div>
-
-    <div class="card_container" id="graphContainer">
-        <div class="graph_controls">
-            <button onclick="zoomIn()" title="Zoom In">+</button>
-            <button onclick="zoomOut()" title="Zoom Out">−</button>
-            <button onclick="resetZoom()" title="Reset View">⟲</button>
-        </div>
-        <svg id="graphSvg">
-            <g id="graphGroup"></g>
-        </svg>
-    </div>
-
-    <div class="info_panel" id="infoPanel">
-        <h2 id="infoTitle">Description of COMP 1633</h2>
-        <div id="infoDesc">
-            <p>Introduction to object-oriented analysis and design, programming using an object-oriented language, 
-                and implementation of linked data structures. Issues of modularity, software design, 
-                and programming style will be emphasized.
-            </p>
+    <!-- ===== VIEW: Prereq Tree ===== -->
+    <div class="view" id="view_tree">
+        <div class="search_bar">
+            <input type="text" id="searchInput" placeholder="Search by course code (e.g. COMP 2631)" autocomplete="off">
+            <div id="suggestions" class="suggestions"></div>
         </div>
 
-        <!-- Progress tracking controls (FR4) -->
-        <div class="progress_section" id="progressSection" style="display:none;">
-            <h3>Your Progress</h3>
-            <div id="progressLoginMsg" style="display:none;">
-                <p class="login_prompt" onclick="showAuthModal()">Log in to track your progress</p>
+        <div class="tree_layout">
+            <div class="card_container" id="graphContainer">
+                <div class="graph_controls">
+                    <button onclick="zoomIn()" title="Zoom In">+</button>
+                    <button onclick="zoomOut()" title="Zoom Out">−</button>
+                    <button onclick="resetZoom()" title="Reset View">⟲</button>
+                </div>
+                <svg id="graphSvg"><g id="graphGroup"></g></svg>
             </div>
-            <div id="progressButtons">
-                <div class="status_buttons">
-                    <button class="status_btn" data-status="completed" onclick="setStatus('completed')">✔ Completed</button>
-                    <button class="status_btn" data-status="in-progress" onclick="setStatus('in-progress')">⏳ In Progress</button>
-                    <button class="status_btn" data-status="planned" onclick="setStatus('planned')">📋 Planned</button>
-                    <button class="status_btn clear_btn" onclick="setStatus('')">✕ Clear</button>
+
+            <div class="info_panel" id="infoPanel">
+                <h2 id="infoTitle">Select a course</h2>
+                <div id="infoDesc"><p>Search for a course to see its details.</p></div>
+                <div class="progress_section" id="progressSection" style="display:none;">
+                    <h3>Your Progress</h3>
+                    <div id="progressLoginMsg" style="display:none;">
+                        <p class="login_prompt" onclick="showAuthModal()">Log in to track your progress</p>
+                    </div>
+                    <div id="progressButtons">
+                        <div class="status_buttons">
+                            <button class="status_btn" data-status="completed" onclick="setStatus('completed')">✔ Completed</button>
+                            <button class="status_btn" data-status="in-progress" onclick="setStatus('in-progress')">⏳ In Progress</button>
+                            <button class="status_btn" data-status="planned" onclick="setStatus('planned')">📋 Planned</button>
+                            <button class="status_btn clear_btn" onclick="setStatus('')">✕ Clear</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="legend">
+                    <h3>Legend</h3>
+                    <div class="legend_items">
+                        <div class="legend_item"><span class="legend_dot completed"></span> Completed</div>
+                        <div class="legend_item"><span class="legend_dot in-progress"></span> In Progress</div>
+                        <div class="legend_item"><span class="legend_dot planned"></span> Planned</div>
+                        <div class="legend_item"><span class="legend_dot"></span> Not tracked</div>
+                        <div class="legend_item"><span class="legend_dot blocked"></span> Blocked (prereqs not met)</div>
+                        <div class="legend_item"><span class="legend_dot warning"></span> Check requirements</div>
+                    </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Program Filter (FR7) -->
-        <div class="filter_section" id="filterSection">
-            <h3>Program Filter</h3>
-            <select id="programSelect" onchange="onProgramChange()">
-                <option value="">No filter</option>
-            </select>
-            <div id="categoryFilters" class="category_filters"></div>
+    <!-- ===== VIEW: Major ===== -->
+    <div class="view" id="view_major" style="display:none;">
+        <div class="major_header">
+            <label>Select your major:
+                <select id="majorSelect" onchange="onMajorChange()">
+                    <option value="">Choose a program...</option>
+                </select>
+            </label>
+            <span id="majorSaveStatus"></span>
         </div>
+        <div id="majorContent" class="course_list_container">
+            <p class="empty_msg">Select a program above to see its course requirements.</p>
+        </div>
+    </div>
 
-        <!-- Legend (FR5) -->
-        <div class="legend">
-            <h3>Legend</h3>
-            <div class="legend_items">
-                <div class="legend_item"><span class="legend_dot completed"></span> Completed</div>
-                <div class="legend_item"><span class="legend_dot in-progress"></span> In Progress</div>
-                <div class="legend_item"><span class="legend_dot planned"></span> Planned</div>
-                <div class="legend_item"><span class="legend_dot"></span> Not tracked</div>
-            </div>
-            <div class="legend_items" id="categoryLegend" style="margin-top:8px;"></div>
+    <!-- ===== VIEW: GNEDs ===== -->
+    <div class="view" id="view_gned" style="display:none;">
+        <div class="gned_header">
+            <h2>General Education Requirements</h2>
+            <p>10 courses: 4 Foundation (one per cluster) + 3 Tier 2 (max one per cluster) + 3 Tier 3 (from at least 2 clusters)</p>
         </div>
+        <div id="gnedContent" class="course_list_container"></div>
     </div>
 
     <script src="dagre.min.js"></script>
     <script>
-        // ---- Auth State ----
+        // ===== THEME =====
+        var savedTheme = localStorage.getItem('pct_theme') || 'light';
+        document.body.setAttribute('data-theme', savedTheme);
+        updateThemeIcon();
+        function toggleTheme() {
+            var next = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', next);
+            localStorage.setItem('pct_theme', next);
+            updateThemeIcon();
+            if (currentCourse) selectCourse(currentCourse);
+        }
+        function updateThemeIcon() {
+            var btn = document.querySelector('.theme_toggle');
+            if (btn) btn.textContent = document.body.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+        }
+
+        // ===== STATE =====
         var token = localStorage.getItem('pct_token') || '';
         var currentUser = null;
         var currentCourse = null;
         var activeSelectRequestId = 0;
         var progress = {};
-
-        // ---- Program Filter State (FR7) ----
         var programsData = null;
-        var selectedProgram = '';
-        var activeCategories = {};  // category_key -> true/false
+        var currentView = 'tree';
 
-        // Category colors for the border highlights
-        var categoryColors = {
-            core: '#2980b9',
-            option: '#8e44ad',
-            cognate_astronomy: '#e67e22',
-            cognate_biology: '#27ae60',
-            cognate_chemistry: '#c0392b',
-            cognate_data_science: '#16a085',
-            cognate_gis: '#d35400',
-            cognate_geoscience: '#7f8c8d',
-            cognate_mathematics: '#2c3e50',
-            cognate_physics: '#8e44ad',
-            concentration_cs: '#2980b9',
-            concentration_finance: '#e67e22',
-            concentration_logistics: '#c0392b',
-            concentration_math: '#16a085'
-        };
-
-        async function loadPrograms() {
-            try {
-                var res = await fetch('/programs.json');
-                programsData = await res.json();
-                buildProgramSelect();
-            } catch (err) {
-                console.log('Could not load programs.json:', err);
-            }
+        // ===== TABS =====
+        function switchView(view) {
+            currentView = view;
+            document.querySelectorAll('.view').forEach(function(v) { v.style.display = 'none'; });
+            document.getElementById('view_' + view).style.display = 'block';
+            document.querySelectorAll('.nav_tab').forEach(function(t) { t.classList.remove('active'); });
+            event.target.classList.add('active');
+            if (view === 'major') renderMajorView();
+            if (view === 'gned') renderGnedView();
         }
 
-        function buildProgramSelect() {
-            var select = document.getElementById('programSelect');
-            select.innerHTML = '<option value="">No filter</option>';
-            for (var key in programsData) {
-                var opt = document.createElement('option');
-                opt.value = key;
-                opt.textContent = programsData[key].name;
-                select.appendChild(opt);
-            }
-        }
-
-        function onProgramChange() {
-            selectedProgram = document.getElementById('programSelect').value;
-            activeCategories = {};
-            buildCategoryCheckboxes();
-            if (currentCourse) selectCourse(currentCourse);
-        }
-
-        function buildCategoryCheckboxes() {
-            var container = document.getElementById('categoryFilters');
-            var legendContainer = document.getElementById('categoryLegend');
-            container.innerHTML = '';
-            legendContainer.innerHTML = '';
-
-            if (!selectedProgram || !programsData[selectedProgram]) return;
-
-            var cats = programsData[selectedProgram].categories;
-            for (var key in cats) {
-                var color = categoryColors[key] || '#888';
-
-                // Checkbox
-                var label = document.createElement('label');
-                label.className = 'category_checkbox';
-
-                var input = document.createElement('input');
-                input.type = 'checkbox';
-                input.checked = true;
-                input.dataset.category = key;
-                input.addEventListener('change', function() {
-                    activeCategories[this.dataset.category] = this.checked;
-                    if (currentCourse) selectCourse(currentCourse);
-                });
-
-                var dot = document.createElement('span');
-                dot.className = 'cat_dot';
-                dot.style.backgroundColor = color;
-
-                var text = document.createTextNode(' ' + cats[key].label);
-
-                label.appendChild(input);
-                label.appendChild(dot);
-                label.appendChild(text);
-                container.appendChild(label);
-
-                activeCategories[key] = true;
-
-                // Legend entry
-                var legendItem = document.createElement('div');
-                legendItem.className = 'legend_item';
-                legendItem.innerHTML = '<span class="cat_dot" style="background-color:' + color + '"></span> ' + cats[key].label;
-                legendContainer.appendChild(legendItem);
-            }
-        }
-
-        function getCourseCategory(code) {
-            if (!selectedProgram || !programsData[selectedProgram]) return null;
-            var cats = programsData[selectedProgram].categories;
-            for (var key in cats) {
-                if (activeCategories[key] && cats[key].courses.indexOf(code) !== -1) {
-                    return key;
-                }
-            }
-            return null;
-        }
-
-        // ---- Auth Init ----
+        // ===== AUTH =====
         async function initAuth() {
             if (!token) { updateAuthUI(); return; }
-
             try {
-                var res = await fetch('/api/auth/me', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
+                var res = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
                 if (res.ok) {
                     currentUser = await res.json();
                     await loadProgress();
-                } else {
-                    token = '';
-                    localStorage.removeItem('pct_token');
-                }
-            } catch (err) {
-                console.log('Auth check failed:', err);
-            }
+                } else { token = ''; localStorage.removeItem('pct_token'); }
+            } catch (err) { console.log('Auth check failed:', err); }
             updateAuthUI();
         }
-
         function updateAuthUI() {
-            var authStatus = document.getElementById('authStatus');
-            var authBtn = document.getElementById('authBtn');
-
+            var s = document.getElementById('authStatus');
+            var b = document.getElementById('authBtn');
             if (currentUser) {
-                authStatus.textContent = 'Welcome, ' + currentUser.username;
-                authBtn.textContent = 'Logout';
-                authBtn.onclick = doLogout;
+                s.textContent = 'Welcome, ' + currentUser.username;
+                b.textContent = 'Logout'; b.onclick = doLogout;
+                // Set major dropdown if saved
+                if (currentUser.major) document.getElementById('majorSelect').value = currentUser.major;
             } else {
-                authStatus.textContent = 'Not logged in';
-                authBtn.textContent = 'Login / Register';
-                authBtn.onclick = showAuthModal;
+                s.textContent = 'Not logged in';
+                b.textContent = 'Login / Register'; b.onclick = showAuthModal;
             }
             updateProgressSection();
         }
-
         function updateProgressSection() {
-            var loginMsg = document.getElementById('progressLoginMsg');
-            var buttons = document.getElementById('progressButtons');
-            if (currentUser) {
-                loginMsg.style.display = 'none';
-                buttons.style.display = 'block';
-            } else {
-                loginMsg.style.display = 'block';
-                buttons.style.display = 'none';
-            }
+            var l = document.getElementById('progressLoginMsg');
+            var b = document.getElementById('progressButtons');
+            if (currentUser) { l.style.display = 'none'; b.style.display = 'block'; }
+            else { l.style.display = 'block'; b.style.display = 'none'; }
         }
-
-        // ---- Auth Modal ----
-        function showAuthModal() {
-            document.getElementById('authModal').style.display = 'flex';
-            document.getElementById('authError').textContent = '';
-        }
-
-        function hideAuthModal() {
-            document.getElementById('authModal').style.display = 'none';
-        }
-
+        function showAuthModal() { document.getElementById('authModal').style.display = 'flex'; document.getElementById('authError').textContent = ''; }
+        function hideAuthModal() { document.getElementById('authModal').style.display = 'none'; }
         function switchTab(tab) {
             document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
             document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
@@ -294,468 +200,488 @@
             document.getElementById('authModalTitle').textContent = tab === 'login' ? 'Login' : 'Register';
             document.getElementById('authError').textContent = '';
         }
-
         async function doLogin() {
             var email = document.getElementById('loginEmail').value.trim();
             var password = document.getElementById('loginPassword').value;
-            var errorEl = document.getElementById('authError');
-
-            if (!email || !password) { errorEl.textContent = 'Please fill in all fields.'; return; }
-
+            var err = document.getElementById('authError');
+            if (!email || !password) { err.textContent = 'Please fill in all fields.'; return; }
             try {
-                var res = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email, password: password })
-                });
+                var res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, password: password }) });
                 var data = await res.json();
-
-                if (data.success) {
-                    token = data.token;
-                    currentUser = data.user;
-                    localStorage.setItem('pct_token', token);
-                    hideAuthModal();
-                    await loadProgress();
-                    updateAuthUI();
-                    if (currentCourse) selectCourse(currentCourse);
-                } else {
-                    errorEl.textContent = data.error;
-                }
-            } catch (err) {
-                errorEl.textContent = 'Connection failed. Is the server running?';
-            }
+                if (data.success) { token = data.token; currentUser = data.user; localStorage.setItem('pct_token', token); hideAuthModal(); await loadProgress(); updateAuthUI(); if (currentCourse) selectCourse(currentCourse); }
+                else { err.textContent = data.error; }
+            } catch (e) { err.textContent = 'Connection failed.'; }
         }
-
         async function doRegister() {
             var username = document.getElementById('regUsername').value.trim();
             var email = document.getElementById('regEmail').value.trim();
             var password = document.getElementById('regPassword').value;
-            var errorEl = document.getElementById('authError');
-
-            if (!username || !email || !password) { errorEl.textContent = 'Please fill in all fields.'; return; }
-            if (password.length < 6) { errorEl.textContent = 'Password must be at least 6 characters.'; return; }
-
+            var err = document.getElementById('authError');
+            if (!username || !email || !password) { err.textContent = 'Please fill in all fields.'; return; }
+            if (password.length < 6) { err.textContent = 'Password must be at least 6 characters.'; return; }
             try {
-                var res = await fetch('/api/auth/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email, username: username, password: password })
-                });
+                var res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, username: username, password: password }) });
                 var data = await res.json();
-
-                if (data.success) {
-                    token = data.token;
-                    currentUser = data.user;
-                    localStorage.setItem('pct_token', token);
-                    hideAuthModal();
-                    updateAuthUI();
-                } else {
-                    errorEl.textContent = data.error;
-                }
-            } catch (err) {
-                errorEl.textContent = 'Connection failed. Is the server running?';
-            }
+                if (data.success) { token = data.token; currentUser = data.user; localStorage.setItem('pct_token', token); hideAuthModal(); updateAuthUI(); }
+                else { err.textContent = data.error; }
+            } catch (e) { err.textContent = 'Connection failed.'; }
         }
+        function doLogout() { token = ''; currentUser = null; progress = {}; localStorage.removeItem('pct_token'); updateAuthUI(); if (currentCourse) selectCourse(currentCourse); }
 
-        function doLogout() {
-            token = '';
-            currentUser = null;
-            progress = {};
-            localStorage.removeItem('pct_token');
-            updateAuthUI();
-            if (currentCourse) selectCourse(currentCourse);
-        }
-
-        // ---- Progress (uses JWT auth) ----
+        // ===== PROGRESS =====
         async function loadProgress() {
             if (!token) { progress = {}; return; }
             try {
-                var res = await fetch('/api/progress', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                var data = await res.json();
-                progress = {};
+                var res = await fetch('/api/progress', { headers: { 'Authorization': 'Bearer ' + token } });
+                var data = await res.json(); progress = {};
                 data.forEach(function(p) { progress[p.course_code] = p.status; });
-            } catch (err) {
-                console.log('Could not load progress:', err);
-            }
+            } catch (err) { console.log('Could not load progress:', err); }
         }
-
         async function setStatus(status) {
             if (!currentCourse) return;
             if (!currentUser) { showAuthModal(); return; }
+            try {
+                await fetch('/api/progress', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ course_code: currentCourse, status: status }) });
+                if (status === '') { delete progress[currentCourse]; } else { progress[currentCourse] = status; }
+                selectCourse(currentCourse);
+            } catch (err) { console.error('Failed to save progress:', err); }
+        }
+        // Quick status set from course list views
+        async function setStatusFor(code, status) {
+            if (!currentUser) { showAuthModal(); return; }
+            try {
+                await fetch('/api/progress', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ course_code: code, status: status }) });
+                if (status === '') { delete progress[code]; } else { progress[code] = status; }
+                if (currentView === 'major') renderMajorView();
+                if (currentView === 'gned') renderGnedView();
+            } catch (err) { console.error('Failed:', err); }
+        }
+
+        // ===== PROGRAMS =====
+        async function loadPrograms() {
+            try {
+                var res = await fetch('/programs.json');
+                programsData = await res.json();
+                buildMajorSelect();
+            } catch (err) { console.log('Could not load programs.json:', err); }
+        }
+        function buildMajorSelect() {
+            var select = document.getElementById('majorSelect');
+            select.innerHTML = '<option value="">Choose a program...</option>';
+            for (var key in programsData) {
+                if (key === '_gned') continue;
+                var opt = document.createElement('option');
+                opt.value = key; opt.textContent = programsData[key].name;
+                select.appendChild(opt);
+            }
+            if (currentUser && currentUser.major) select.value = currentUser.major;
+        }
+        async function onMajorChange() {
+            var major = document.getElementById('majorSelect').value;
+            if (currentUser && token) {
+                await fetch('/api/auth/major', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ major: major }) });
+                currentUser.major = major;
+                var s = document.getElementById('majorSaveStatus');
+                s.textContent = '✓ Saved'; setTimeout(function() { s.textContent = ''; }, 2000);
+            }
+            renderMajorView();
+            // Re-render tree with updated major filter if a course is loaded
+            if (currentView === 'tree' && currentCourse) selectCourse(currentCourse);
+        }
+
+        // ===== MAJOR VIEW =====
+        async function renderMajorView() {
+            var container = document.getElementById('majorContent');
+            var majorKey = document.getElementById('majorSelect').value;
+            if (!majorKey || !programsData[majorKey]) {
+                container.innerHTML = '<p class="empty_msg">Select a program above to see its course requirements.</p>';
+                return;
+            }
+            var prog = programsData[majorKey];
+
+            // Collect all course codes for batch fetch
+            var allCodes = [];
+            for (var catKey in prog.categories) {
+                allCodes = allCodes.concat(prog.categories[catKey].courses);
+            }
+            await batchLoadTitles(allCodes);
+
+            var html = '<h2>' + prog.name + '</h2>';
+            for (var catKey in prog.categories) {
+                var cat = prog.categories[catKey];
+                var completedCount = cat.courses.filter(function(c) { return progress[c] === 'completed'; }).length;
+                html += renderCollapsibleCategory(catKey, cat.label, cat.note || '', cat.courses, completedCount);
+            }
+            container.innerHTML = html;
+        }
+
+        // ===== GNED VIEW =====
+        async function renderGnedView() {
+            var container = document.getElementById('gnedContent');
+            if (!programsData || !programsData._gned) {
+                container.innerHTML = '<p class="empty_msg">GNED data not loaded.</p>';
+                return;
+            }
+            var gned = programsData._gned.structure;
+
+            // Batch fetch all GNED course titles
+            var allCodes = [];
+            ['foundation', 'tier2', 'tier3'].forEach(function(tierKey) {
+                for (var ck in gned[tierKey].clusters) {
+                    allCodes = allCodes.concat(gned[tierKey].clusters[ck].courses);
+                }
+            });
+            await batchLoadTitles(allCodes);
+
+            var html = '';
+            ['foundation', 'tier2', 'tier3'].forEach(function(tierKey) {
+                var tier = gned[tierKey];
+                html += '<div class="gned_tier">';
+                html += '<h2>' + tier.label + '</h2>';
+                if (tier.note) html += '<p class="tier_note">' + tier.note + '</p>';
+                for (var clusterKey in tier.clusters) {
+                    var cluster = tier.clusters[clusterKey];
+                    var completedCount = cluster.courses.filter(function(c) { return progress[c] === 'completed'; }).length;
+                    html += renderCollapsibleCategory(tierKey + '_' + clusterKey, cluster.label, '', cluster.courses, completedCount);
+                }
+                html += '</div>';
+            });
+            container.innerHTML = html;
+        }
+
+        // ===== SHARED: Collapsible Category =====
+        function renderCollapsibleCategory(id, label, note, courses, completedCount) {
+            var total = courses.length;
+            var badge = completedCount > 0 ? ' <span class="cat_badge">' + completedCount + '/' + total + '</span>' : ' <span class="cat_badge cat_badge_dim">' + total + ' courses</span>';
+            var noteHtml = note ? '<span class="cat_note">' + note + '</span>' : '';
+
+            var html = '<div class="course_category">';
+            html += '<h3 class="cat_header" onclick="toggleCategory(\'' + id + '\')">';
+            html += '<span class="cat_arrow" id="arrow_' + id + '">▶</span> ' + label + badge;
+            html += '</h3>';
+            if (noteHtml) html += '<div class="cat_note_line" id="note_' + id + '" style="display:none;">' + noteHtml + '</div>';
+            html += '<div class="course_list" id="cat_' + id + '" style="display:none;">';
+            courses.forEach(function(code) {
+                html += renderCourseRow(code);
+            });
+            html += '</div></div>';
+            return html;
+        }
+
+        function toggleCategory(id) {
+            var list = document.getElementById('cat_' + id);
+            var arrow = document.getElementById('arrow_' + id);
+            var note = document.getElementById('note_' + id);
+            var isOpen = list.style.display !== 'none';
+            list.style.display = isOpen ? 'none' : 'block';
+            if (note) note.style.display = isOpen ? 'none' : 'block';
+            arrow.textContent = isOpen ? '▶' : '▼';
+        }
+
+        // ===== SHARED: Course Row =====
+        function renderCourseRow(code) {
+            var status = progress[code] || '';
+            var statusClass = status ? ' status_' + status : '';
+            var statusDot = '<span class="legend_dot ' + (status || '') + '"></span>';
+            var title = titleCache[code] || '';
+
+            var buttons = '';
+            if (currentUser) {
+                buttons = '<div class="row_actions">' +
+                    '<button class="row_btn completed_btn' + (status === 'completed' ? ' active' : '') + '" onclick="event.stopPropagation();setStatusFor(\'' + code + '\',\'completed\')" title="Completed">✔</button>' +
+                    '<button class="row_btn inprogress_btn' + (status === 'in-progress' ? ' active' : '') + '" onclick="event.stopPropagation();setStatusFor(\'' + code + '\',\'in-progress\')" title="In Progress">⏳</button>' +
+                    '<button class="row_btn planned_btn' + (status === 'planned' ? ' active' : '') + '" onclick="event.stopPropagation();setStatusFor(\'' + code + '\',\'planned\')" title="Planned">📋</button>' +
+                    (status ? '<button class="row_btn clear_row_btn" onclick="event.stopPropagation();setStatusFor(\'' + code + '\',\'\')" title="Clear">✕</button>' : '') +
+                    '</div>';
+            }
+
+            return '<div class="course_row' + statusClass + '" onclick="goToTree(\'' + code + '\')">' +
+                statusDot +
+                '<span class="row_code">' + code + '</span>' +
+                '<span class="row_title">' + title + '</span>' +
+                buttons +
+                '<span class="row_arrow">→</span>' +
+                '</div>';
+        }
+
+        // Navigate to tree view for a course
+        function goToTree(code) {
+            document.querySelectorAll('.nav_tab').forEach(function(t) { t.classList.remove('active'); });
+            document.querySelectorAll('.nav_tab')[0].classList.add('active');
+            document.querySelectorAll('.view').forEach(function(v) { v.style.display = 'none'; });
+            document.getElementById('view_tree').style.display = 'block';
+            currentView = 'tree';
+            document.getElementById('searchInput').value = code;
+            selectCourse(code);
+        }
+
+        // ===== Batch Title Loading =====
+        var titleCache = {};
+        async function batchLoadTitles(codes) {
+            // Filter out already cached
+            var needed = codes.filter(function(c) { return !titleCache[c]; });
+            // Deduplicate
+            needed = needed.filter(function(c, i) { return needed.indexOf(c) === i; });
+            if (needed.length === 0) return;
 
             try {
-                await fetch('/api/progress', {
+                var res = await fetch('/api/courses/batch', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + token
-                    },
-                    body: JSON.stringify({ course_code: currentCourse, status: status })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ codes: needed })
                 });
-
-                if (status === '') {
-                    delete progress[currentCourse];
-                } else {
-                    progress[currentCourse] = status;
+                var data = await res.json();
+                for (var code in data) {
+                    titleCache[code] = data[code];
                 }
-                selectCourse(currentCourse);
             } catch (err) {
-                console.error('Failed to save progress:', err);
+                console.log('Batch title load failed:', err);
             }
         }
 
-        // ---- Search ----
+        // ===== SEARCH =====
         var searchInput = document.getElementById('searchInput');
         var suggestionsBox = document.getElementById('suggestions');
-
         searchInput.addEventListener('input', async function() {
-            var query = this.value.trim();
-            suggestionsBox.innerHTML = '';
-
-            if (query.length < 2) {
-                suggestionsBox.style.display = 'none';
-                return;
-            }
-
+            var query = this.value.trim(); suggestionsBox.innerHTML = '';
+            if (query.length < 2) { suggestionsBox.style.display = 'none'; return; }
             try {
                 var res = await fetch('/api/courses/search?q=' + encodeURIComponent(query));
                 var matches = await res.json();
-
-                if (matches.length === 0) {
-                    suggestionsBox.style.display = 'none';
-                    return;
-                }
-
+                if (matches.length === 0) { suggestionsBox.style.display = 'none'; return; }
                 matches.forEach(function(c) {
-                    var div = document.createElement('div');
-                    div.className = 'suggestion_item';
-
-                    var statusClass = progress[c.course_code] || '';
-                    var dot = statusClass ? '<span class="legend_dot ' + statusClass + '" style="margin-right:6px;"></span>' : '';
-
+                    var div = document.createElement('div'); div.className = 'suggestion_item';
+                    var dot = progress[c.course_code] ? '<span class="legend_dot ' + progress[c.course_code] + '" style="margin-right:6px;"></span>' : '';
                     div.innerHTML = dot + '<strong>' + c.course_code + '</strong> - ' + c.course_title;
-                    div.addEventListener('click', function() {
-                        searchInput.value = c.course_code;
-                        suggestionsBox.style.display = 'none';
-                        selectCourse(c.course_code);
-                    });
+                    div.addEventListener('click', function() { searchInput.value = c.course_code; suggestionsBox.style.display = 'none'; selectCourse(c.course_code); });
                     suggestionsBox.appendChild(div);
                 });
                 suggestionsBox.style.display = 'block';
-            } catch (err) {
-                console.error('Search failed:', err);
-            }
+            } catch (err) { console.error('Search failed:', err); }
         });
+        searchInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') { suggestionsBox.style.display = 'none'; selectCourse(this.value.trim().toUpperCase()); } });
+        document.addEventListener('click', function(e) { if (!e.target.closest('.search_bar')) suggestionsBox.style.display = 'none'; });
 
-        searchInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                var query = this.value.trim().toUpperCase();
-                suggestionsBox.style.display = 'none';
-                selectCourse(query);
-            }
-        });
-
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.search_bar')) suggestionsBox.style.display = 'none';
-        });
-
-        // ---- Fetch course title helper ----
-        async function fetchCourseTitle(code) {
-            try {
-                var res = await fetch('/api/courses/' + encodeURIComponent(code));
-                if (!res.ok) return { code: code, title: 'Not in catalog' };
-                var course = await res.json();
-                return { code: course.course_code, title: course.course_title || 'Not in catalog' };
-            } catch (err) {
-                return { code: code, title: 'Not in catalog' };
-            }
-        }
-
-        // ---- Zoom/Pan via viewBox ----
+        // ===== GRAPH =====
         var viewBox = { x: 0, y: 0, w: 800, h: 600 };
-        var isPanning = false;
-        var panStart = { x: 0, y: 0 };
-        var panStartVB = { x: 0, y: 0 };
-
-        function setViewBox() {
-            var svg = document.getElementById('graphSvg');
-            svg.setAttribute('viewBox', viewBox.x + ' ' + viewBox.y + ' ' + viewBox.w + ' ' + viewBox.h);
-        }
-
+        var isPanning = false; var panStart = { x: 0, y: 0 }; var panStartVB = { x: 0, y: 0 };
+        function setViewBox() { document.getElementById('graphSvg').setAttribute('viewBox', viewBox.x + ' ' + viewBox.y + ' ' + viewBox.w + ' ' + viewBox.h); }
         function initZoomPan() {
             var svg = document.getElementById('graphSvg');
-
             svg.addEventListener('wheel', function(e) {
-                e.preventDefault();
-                var factor = e.deltaY > 0 ? 1.15 : 0.85;
-
-                // Get mouse position in viewBox coordinates
-                var rect = svg.getBoundingClientRect();
-                var mx = (e.clientX - rect.left) / rect.width;
-                var my = (e.clientY - rect.top) / rect.height;
-
-                var newW = viewBox.w * factor;
-                var newH = viewBox.h * factor;
-
-                // Zoom toward mouse position
-                viewBox.x -= (newW - viewBox.w) * mx;
-                viewBox.y -= (newH - viewBox.h) * my;
-                viewBox.w = newW;
-                viewBox.h = newH;
-                setViewBox();
+                e.preventDefault(); var f = e.deltaY > 0 ? 1.15 : 0.85;
+                var r = svg.getBoundingClientRect(); var mx = (e.clientX - r.left) / r.width; var my = (e.clientY - r.top) / r.height;
+                var nw = viewBox.w * f; var nh = viewBox.h * f;
+                viewBox.x -= (nw - viewBox.w) * mx; viewBox.y -= (nh - viewBox.h) * my; viewBox.w = nw; viewBox.h = nh; setViewBox();
             });
-
             svg.addEventListener('mousedown', function(e) {
                 if (e.target.closest('.graph_node')) return;
-                isPanning = true;
-                panStart.x = e.clientX;
-                panStart.y = e.clientY;
-                panStartVB.x = viewBox.x;
-                panStartVB.y = viewBox.y;
-                svg.style.cursor = 'grabbing';
-                e.preventDefault();
+                isPanning = true; panStart.x = e.clientX; panStart.y = e.clientY; panStartVB.x = viewBox.x; panStartVB.y = viewBox.y; svg.style.cursor = 'grabbing'; e.preventDefault();
             });
-
             window.addEventListener('mousemove', function(e) {
-                if (!isPanning) return;
-                var svg = document.getElementById('graphSvg');
-                var rect = svg.getBoundingClientRect();
-                // Convert pixel movement to viewBox movement
-                var dx = (e.clientX - panStart.x) * (viewBox.w / rect.width);
-                var dy = (e.clientY - panStart.y) * (viewBox.h / rect.height);
-                viewBox.x = panStartVB.x - dx;
-                viewBox.y = panStartVB.y - dy;
-                setViewBox();
+                if (!isPanning) return; var r = document.getElementById('graphSvg').getBoundingClientRect();
+                viewBox.x = panStartVB.x - (e.clientX - panStart.x) * (viewBox.w / r.width);
+                viewBox.y = panStartVB.y - (e.clientY - panStart.y) * (viewBox.h / r.height); setViewBox();
             });
+            window.addEventListener('mouseup', function() { isPanning = false; document.getElementById('graphSvg').style.cursor = 'grab'; });
+        }
+        function zoomIn() { var cx = viewBox.x + viewBox.w/2, cy = viewBox.y + viewBox.h/2; viewBox.w *= 0.7; viewBox.h *= 0.7; viewBox.x = cx - viewBox.w/2; viewBox.y = cy - viewBox.h/2; setViewBox(); }
+        function zoomOut() { var cx = viewBox.x + viewBox.w/2, cy = viewBox.y + viewBox.h/2; viewBox.w *= 1.4; viewBox.h *= 1.4; viewBox.x = cx - viewBox.w/2; viewBox.y = cy - viewBox.h/2; setViewBox(); }
+        function resetZoom() { if (currentCourse) selectCourse(currentCourse); }
 
-            window.addEventListener('mouseup', function() {
-                isPanning = false;
-                document.getElementById('graphSvg').style.cursor = 'grab';
+        // Show loading placeholder in graph area
+        function showGraphLoading() {
+            var group = document.getElementById('graphGroup');
+            group.innerHTML = '';
+            var txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            txt.setAttribute('x', '400'); txt.setAttribute('y', '300');
+            txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('font-size', '18');
+            txt.setAttribute('fill', '#999'); txt.setAttribute('font-family', 'Arial, sans-serif');
+            txt.textContent = 'Loading tree...';
+            group.appendChild(txt);
+            viewBox = { x: 0, y: 0, w: 800, h: 600 }; setViewBox();
+        }
+
+        // Walk the prereq tree and record each node's direct prereq codes
+        function buildPrereqsOfMap(node, prereqsOf) {
+            if (node.children.length > 0) {
+                if (!prereqsOf[node.code]) prereqsOf[node.code] = [];
+                node.children.forEach(function(child) {
+                    if (prereqsOf[node.code].indexOf(child.code) === -1) prereqsOf[node.code].push(child.code);
+                });
+            }
+            node.children.forEach(function(child) { buildPrereqsOfMap(child, prereqsOf); });
+        }
+
+        // Populate titleCache from a tree response (avoids extra round-trips later)
+        function cacheTreeTitles(node) {
+            if (node.title) titleCache[node.code] = node.title;
+            node.children.forEach(cacheTreeTitles);
+        }
+
+        // Recursively add nodes and edges from a tree branch into the dagre graph.
+        // direction 'prereq': child→node edges (prereq flows left)
+        // direction 'unlock': node→child edges (unlock flows right)
+        function addTreeNodes(g, node, direction) {
+            if (!g.hasNode(node.code)) {
+                g.setNode(node.code, { label: node.code, title: node.title, width: NODE_WIDTH, height: NODE_HEIGHT, isMain: false });
+            }
+            node.children.forEach(function(child) {
+                if (!g.hasNode(child.code)) {
+                    g.setNode(child.code, { label: child.code, title: child.title, width: NODE_WIDTH, height: NODE_HEIGHT, isMain: false });
+                }
+                if (direction === 'prereq') {
+                    if (!g.hasEdge(child.code, node.code)) g.setEdge(child.code, node.code);
+                } else {
+                    if (!g.hasEdge(node.code, child.code)) g.setEdge(node.code, child.code);
+                }
+                addTreeNodes(g, child, direction);
             });
         }
 
-        function applyTransform() {
-            // No-op — we use viewBox now, not transforms
+        // Return 'blocked', 'warning', or null (eligible / not applicable)
+        function getEligibility(code, prereqsOf) {
+            if (!currentUser) return null;
+            var status = progress[code] || '';
+            if (status === 'completed' || status === 'in-progress' || status === 'planned') return null;
+            var prereqs = prereqsOf[code];
+            if (!prereqs || prereqs.length === 0) return null;
+            var done = prereqs.filter(function(p) { return progress[p] === 'completed'; }).length;
+            if (done === 0) return 'blocked';
+            if (done === prereqs.length) return null;
+            return 'warning';
         }
 
-        function zoomIn() {
-            var cx = viewBox.x + viewBox.w / 2;
-            var cy = viewBox.y + viewBox.h / 2;
-            viewBox.w *= 0.7;
-            viewBox.h *= 0.7;
-            viewBox.x = cx - viewBox.w / 2;
-            viewBox.y = cy - viewBox.h / 2;
-            setViewBox();
-        }
-
-        function zoomOut() {
-            var cx = viewBox.x + viewBox.w / 2;
-            var cy = viewBox.y + viewBox.h / 2;
-            viewBox.w *= 1.4;
-            viewBox.h *= 1.4;
-            viewBox.x = cx - viewBox.w / 2;
-            viewBox.y = cy - viewBox.h / 2;
-            setViewBox();
-        }
-
-        function resetZoom() {
-            if (currentCourse) selectCourse(currentCourse);
-        }
-
-        // ---- Graph Rendering with Dagre ----
-        var NODE_WIDTH = 180;
-        var NODE_HEIGHT = 70;
+        var NODE_WIDTH = 180; var NODE_HEIGHT = 70;
 
         async function selectCourse(code) {
-            var requestId = ++activeSelectRequestId;
+            var rid = ++activeSelectRequestId;
+            showGraphLoading();
             try {
-                var res = await fetch('/api/courses/' + encodeURIComponent(code));
-                if (!res.ok) return;
-                var course = await res.json();
-                if (requestId !== activeSelectRequestId) return;
+                var majorKey = (currentUser && currentUser.major) ? currentUser.major : '';
+                var treeUrl = '/api/courses/' + encodeURIComponent(code) + '/tree?depth=4' +
+                    (majorKey ? '&major=' + encodeURIComponent(majorKey) : '');
+
+                var results = await Promise.all([
+                    fetch('/api/courses/' + encodeURIComponent(code)),
+                    fetch(treeUrl)
+                ]);
+                if (!results[0].ok) return;
+                var course = await results[0].json();
+                var treeData = results[1].ok ? await results[1].json() : null;
+                if (rid !== activeSelectRequestId) return;
 
                 currentCourse = code;
                 updateInfoPanel(course);
+                if (!treeData) return;
 
-                var prereqDetails = await Promise.all(course.prereq_codes.map(fetchCourseTitle));
-                var unlockDetails = await Promise.all(course.unlocks.map(fetchCourseTitle));
-                if (requestId !== activeSelectRequestId) return;
+                // Cache all titles from tree for use in major/gned views
+                cacheTreeTitles(treeData.prereqs);
+                cacheTreeTitles(treeData.unlocks);
+
+                // Build map: code → [direct prereq codes] for eligibility checks
+                var prereqsOf = {};
+                buildPrereqsOfMap(treeData.prereqs, prereqsOf);
 
                 // Build dagre graph
                 var g = new dagre.graphlib.Graph();
                 g.setGraph({ rankdir: 'LR', nodesep: 50, ranksep: 150, marginx: 60, marginy: 60 });
                 g.setDefaultEdgeLabel(function() { return {}; });
 
-                g.setNode(code, { label: code, title: course.course_title, width: NODE_WIDTH + 20, height: NODE_HEIGHT + 10, isMain: true });
+                // Main node in centre
+                g.setNode(code, { label: code, title: treeData.course_title, width: NODE_WIDTH + 20, height: NODE_HEIGHT + 10, isMain: true });
 
-                prereqDetails.forEach(function(p) {
-                    g.setNode(p.code, { label: p.code, title: p.title, width: NODE_WIDTH, height: NODE_HEIGHT, isMain: false });
-                    g.setEdge(p.code, code);
-                });
+                // Left side: full prereq chain
+                addTreeNodes(g, treeData.prereqs, 'prereq');
 
-                unlockDetails.forEach(function(u) {
-                    g.setNode(u.code, { label: u.code, title: u.title, width: NODE_WIDTH, height: NODE_HEIGHT, isMain: false });
-                    g.setEdge(code, u.code);
-                });
+                // Right side: full unlock chain (already major-filtered by server)
+                addTreeNodes(g, treeData.unlocks, 'unlock');
 
                 dagre.layout(g);
-                renderGraph(g, code);
-            } catch (err) {
-                console.error('Failed to load course:', err);
-            }
+                renderGraph(g, prereqsOf);
+            } catch (err) { console.error('Failed to load course tree:', err); }
         }
 
-        function renderGraph(g, centerCode) {
-            var group = document.getElementById('graphGroup');
-            group.innerHTML = '';
-
-            // Arrowhead marker
+        function renderGraph(g, prereqsOf) {
+            prereqsOf = prereqsOf || {};
+            var group = document.getElementById('graphGroup'); group.innerHTML = '';
             var svg = document.getElementById('graphSvg');
-            var existingDefs = svg.querySelector('defs');
-            if (existingDefs) existingDefs.remove();
+            var oldDefs = svg.querySelector('defs'); if (oldDefs) oldDefs.remove();
+            var isDark = document.body.getAttribute('data-theme') === 'dark';
+            var edgeColor = isDark ? '#666' : '#999';
             var defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
             var marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
-            marker.setAttribute('id', 'arrowhead');
-            marker.setAttribute('viewBox', '0 0 10 10');
-            marker.setAttribute('refX', '9');
-            marker.setAttribute('refY', '5');
-            marker.setAttribute('markerWidth', '8');
-            marker.setAttribute('markerHeight', '8');
+            marker.setAttribute('id', 'arrowhead'); marker.setAttribute('viewBox', '0 0 10 10');
+            marker.setAttribute('refX', '9'); marker.setAttribute('refY', '5');
+            marker.setAttribute('markerWidth', '8'); marker.setAttribute('markerHeight', '8');
             marker.setAttribute('orient', 'auto-start-reverse');
-            var arrowPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            arrowPath.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
-            arrowPath.setAttribute('fill', '#999');
-            marker.appendChild(arrowPath);
-            defs.appendChild(marker);
-            svg.insertBefore(defs, svg.firstChild);
-
-            // Draw edges
+            var ap = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            ap.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z'); ap.setAttribute('fill', edgeColor);
+            marker.appendChild(ap); defs.appendChild(marker); svg.insertBefore(defs, svg.firstChild);
             g.edges().forEach(function(e) {
-                var edge = g.edge(e);
-                if (!edge.points || edge.points.length < 2) return;
+                var edge = g.edge(e); if (!edge.points || edge.points.length < 2) return;
                 var d = 'M ' + edge.points.map(function(p) { return p.x + ' ' + p.y; }).join(' L ');
                 var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                path.setAttribute('d', d);
-                path.setAttribute('fill', 'none');
-                path.setAttribute('stroke', '#999');
-                path.setAttribute('stroke-width', '2');
-                path.setAttribute('marker-end', 'url(#arrowhead)');
-                group.appendChild(path);
+                path.setAttribute('d', d); path.setAttribute('fill', 'none');
+                path.setAttribute('stroke', edgeColor); path.setAttribute('stroke-width', '2');
+                path.setAttribute('marker-end', 'url(#arrowhead)'); group.appendChild(path);
             });
-
-            // Draw nodes
-            g.nodes().forEach(function(nodeId) {
-                var node = g.node(nodeId);
-                var x = node.x - node.width / 2;
-                var y = node.y - node.height / 2;
-                var status = progress[nodeId] || '';
-                var category = getCourseCategory(nodeId);
-                var catColor = category ? (categoryColors[category] || null) : null;
-
-                var fill = '#9b9b9b', textFill = '#000', stroke = '#777', sw = '1.5';
-                if (status === 'completed') { fill = '#27ae60'; textFill = '#fff'; stroke = '#219a52'; }
-                else if (status === 'in-progress') { fill = '#f1c40f'; textFill = '#333'; stroke = '#d4ac0d'; }
-                else if (status === 'planned') { fill = '#ecf0f1'; textFill = '#555'; stroke = '#bdc3c7'; }
-                if (node.isMain) { stroke = '#333'; sw = '3'; }
-
-                var ng = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                ng.setAttribute('class', 'graph_node');
-                ng.style.cursor = 'pointer';
-                ng.onclick = function() { cardClicked(nodeId); };
-
-                var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                rect.setAttribute('x', x); rect.setAttribute('y', y);
-                rect.setAttribute('width', node.width); rect.setAttribute('height', node.height);
-                rect.setAttribute('rx', '8'); rect.setAttribute('fill', fill);
-                rect.setAttribute('stroke', stroke); rect.setAttribute('stroke-width', sw);
-                ng.appendChild(rect);
-
-                if (catColor) {
-                    var bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                    bar.setAttribute('x', x); bar.setAttribute('y', y + 2);
-                    bar.setAttribute('width', '5'); bar.setAttribute('height', node.height - 4);
-                    bar.setAttribute('fill', catColor);
-                    ng.appendChild(bar);
+            g.nodes().forEach(function(nid) {
+                var node = g.node(nid); var x = node.x - node.width/2; var y = node.y - node.height/2;
+                var status = progress[nid] || '';
+                var fill = isDark ? '#3a3a3a' : '#9b9b9b', tf = isDark ? '#e0e0e0' : '#000', stroke = isDark ? '#555' : '#777', sw = '1.5';
+                if (status === 'completed') { fill = '#27ae60'; tf = '#fff'; stroke = '#219a52'; }
+                else if (status === 'in-progress') { fill = '#f1c40f'; tf = '#333'; stroke = '#d4ac0d'; }
+                else if (status === 'planned') { fill = isDark ? '#2c3e50' : '#ecf0f1'; tf = isDark ? '#bbb' : '#555'; stroke = isDark ? '#4a6278' : '#bdc3c7'; }
+                if (node.isMain) { stroke = isDark ? '#ddd' : '#333'; sw = '3'; }
+                // Eligibility overlay — only for non-main, untracked nodes
+                if (!node.isMain) {
+                    var elig = getEligibility(nid, prereqsOf);
+                    if (elig === 'blocked') {
+                        stroke = '#e74c3c'; sw = '3';
+                        if (!status) fill = isDark ? '#4a2020' : '#fdf0f0';
+                    } else if (elig === 'warning') {
+                        stroke = '#e67e22'; sw = '2';
+                    }
                 }
-
+                var ng = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                ng.setAttribute('class', 'graph_node'); ng.style.cursor = 'pointer';
+                ng.onclick = function() { cardClicked(nid); };
+                var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', x); rect.setAttribute('y', y); rect.setAttribute('width', node.width);
+                rect.setAttribute('height', node.height); rect.setAttribute('rx', '8'); rect.setAttribute('fill', fill);
+                rect.setAttribute('stroke', stroke); rect.setAttribute('stroke-width', sw); ng.appendChild(rect);
                 var t1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                t1.setAttribute('x', node.x); t1.setAttribute('y', node.y - 8);
-                t1.setAttribute('text-anchor', 'middle'); t1.setAttribute('font-size', '16');
-                t1.setAttribute('font-weight', 'bold'); t1.setAttribute('fill', textFill);
-                t1.setAttribute('font-family', 'Arial, sans-serif');
-                t1.textContent = nodeId;
-                ng.appendChild(t1);
-
+                t1.setAttribute('x', node.x); t1.setAttribute('y', node.y - 8); t1.setAttribute('text-anchor', 'middle');
+                t1.setAttribute('font-size', '16'); t1.setAttribute('font-weight', 'bold'); t1.setAttribute('fill', tf);
+                t1.setAttribute('font-family', 'Arial, sans-serif'); t1.textContent = nid; ng.appendChild(t1);
                 var t2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                t2.setAttribute('x', node.x); t2.setAttribute('y', node.y + 14);
-                t2.setAttribute('text-anchor', 'middle'); t2.setAttribute('font-size', '12');
-                t2.setAttribute('fill', textFill); t2.setAttribute('font-family', 'Arial, sans-serif');
-                var title = node.title || '';
-                if (title.length > 24) title = title.substring(0, 22) + '...';
-                t2.textContent = title;
-                ng.appendChild(t2);
-
+                t2.setAttribute('x', node.x); t2.setAttribute('y', node.y + 14); t2.setAttribute('text-anchor', 'middle');
+                t2.setAttribute('font-size', '12'); t2.setAttribute('fill', tf); t2.setAttribute('font-family', 'Arial, sans-serif');
+                var title = node.title || ''; if (title.length > 24) title = title.substring(0, 22) + '...';
+                t2.textContent = title; ng.appendChild(t2);
                 ng.addEventListener('mouseenter', function() { rect.setAttribute('opacity', '0.85'); });
                 ng.addEventListener('mouseleave', function() { rect.setAttribute('opacity', '1'); });
                 group.appendChild(ng);
             });
-
-            centerGraph(g);
+            var graph = g.graph(); viewBox = { x: -40, y: -40, w: (graph.width||600)+80, h: (graph.height||400)+80 }; setViewBox();
         }
-
-        function centerGraph(g) {
-            var graph = g.graph();
-            var pad = 40;
-            viewBox.x = -pad;
-            viewBox.y = -pad;
-            viewBox.w = (graph.width || 600) + pad * 2;
-            viewBox.h = (graph.height || 400) + pad * 2;
-            setViewBox();
-        }
-
-        function cardClicked(code) {
-            searchInput.value = code;
-            selectCourse(code);
-        }
-
+        function cardClicked(code) { searchInput.value = code; selectCourse(code); }
         function updateInfoPanel(course) {
             document.getElementById('infoTitle').textContent = 'Description of ' + course.course_code;
-
             var html = '<p><strong>' + course.course_title + '</strong></p>';
-
-            if (course.description) {
-                html += '<p>' + course.description + '</p>';
-            } else {
-                html += '<p>No description available.</p>';
-            }
-
-            if (course.prerequisites_raw) {
-                html += '<p><strong>Prerequisites:</strong> ' + course.prerequisites_raw + '</p>';
-            } else {
-                html += '<p>No prerequisites required.</p>';
-            }
-
-            if (course.unlocks.length > 0) {
-                html += '<p><strong>Unlocks:</strong> ' + course.unlocks.join(', ') + '</p>';
-            }
-
-            if (course.url) {
-                html += '<p><a href="' + course.url + '" target="_blank">View in MRU Catalog ↗</a></p>';
-            }
-
+            if (course.description) html += '<p>' + course.description + '</p>'; else html += '<p>No description available.</p>';
+            if (course.prerequisites_raw) html += '<p><strong>Prerequisites:</strong> ' + course.prerequisites_raw + '</p>'; else html += '<p>No prerequisites required.</p>';
+            if (course.unlocks.length > 0) html += '<p><strong>Unlocks:</strong> ' + course.unlocks.join(', ') + '</p>';
+            if (course.url) html += '<p><a href="' + course.url + '" target="_blank">View in MRU Catalog ↗</a></p>';
             document.getElementById('infoDesc').innerHTML = html;
             document.getElementById('progressSection').style.display = 'block';
             updateProgressSection();
-
-            var currentStatus = progress[course.course_code] || '';
-            document.querySelectorAll('.status_btn').forEach(function(btn) {
-                btn.classList.remove('active');
-                if (btn.dataset.status === currentStatus) btn.classList.add('active');
-            });
+            var cs = progress[course.course_code] || '';
+            document.querySelectorAll('.status_btn').forEach(function(btn) { btn.classList.remove('active'); if (btn.dataset.status === cs) btn.classList.add('active'); });
         }
 
+        // ===== INIT =====
         window.addEventListener('load', function() {
             initAuth();
             loadPrograms();

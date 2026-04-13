@@ -36,27 +36,20 @@ export interface UserProgress {
     updated_at: string;  // ISO date string
 }
 
-// User Authentication
- 
+// ---------- User Authentication (FR3) ----------
+
 export interface User {
     id: number;
     email: string;
     username: string;
     password_hash: string;
+    major: string;
     created_at: string;
 }
- 
-// What the register/login endpoints accept
-export interface AuthRequest {
-    email: string;
-    username: string;
-    password: string;
-}
- 
-// What the register/login endpoints return
+
 export interface AuthResponse {
     success: boolean;
-    token?: string;      // JWT token
+    token?: string;
     user?: {
         id: number;
         email: string;
@@ -66,6 +59,13 @@ export interface AuthResponse {
 }
 
 // API Response Types
+
+// Deep prerequisite/unlock tree node
+export interface TreeNode {
+    code: string;
+    title: string;
+    children: TreeNode[];
+}
 
 // What the /api/courses/:code endpoint returns
 export interface CourseDetail {

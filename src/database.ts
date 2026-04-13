@@ -1,10 +1,9 @@
 // SQLite database setup and queries
 
-
 import initSqlJs, { Database } from "sql.js";
 import fs from "fs";
 import path from "path";
-import { Course, Prerequisite, RawCourse, CourseDetail, UserProgress, CourseStatus, User} from "./types";
+import { Course, Prerequisite, RawCourse, CourseDetail, UserProgress, CourseStatus, User, TreeNode } from "./types";
 
 let db: Database;
 
@@ -60,6 +59,7 @@ export async function initDatabase(): Promise<void> {
             email TEXT UNIQUE NOT NULL,
             username TEXT NOT NULL,
             password_hash TEXT NOT NULL,
+            major TEXT DEFAULT '',
             created_at TEXT NOT NULL
         )
     `);
@@ -78,7 +78,6 @@ function ensureCourseDescriptionColumn(): void {
     if (results.length === 0) {
         return;
     }
-
     const columns = results[0].values.map((row: any[]) => row[1] as string);
     if (!columns.includes("description")) {
         db.run("ALTER TABLE courses ADD COLUMN description TEXT");
@@ -88,14 +87,11 @@ function ensureCourseDescriptionColumn(): void {
 // Import from pct.json
 
 export function importFromJson(jsonPath: string): number {
-    // Read the scraper output
     const raw: RawCourse[] = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
 
-    // Clear existing data
     db.run("DELETE FROM courses");
     db.run("DELETE FROM prerequisites");
 
-    // Insert courses
     const insertCourse = db.prepare(
         "INSERT OR REPLACE INTO courses (course_code, course_title, description, prerequisites_raw, url) VALUES (?, ?, ?, ?, ?)"
     );
@@ -107,7 +103,6 @@ export function importFromJson(jsonPath: string): number {
     let count = 0;
 
     for (const course of raw) {
-        // Insert the course
         insertCourse.run([
             course.course_code,
             course.course_title,
@@ -116,7 +111,6 @@ export function importFromJson(jsonPath: string): number {
             course.url,
         ]);
 
-        // Parse prerequisite codes from raw text
         const prereqCodes = parsePrereqCodes(course.prerequisites);
         for (const reqCode of prereqCodes) {
             insertPrereq.run([course.course_code, reqCode]);
@@ -138,49 +132,50 @@ function parsePrereqCodes(rawString: string): string[] {
     if (!rawString) return [];
     const matches = rawString.match(/[A-Z]{2,4}\s+\d{4}/g);
     if (!matches) return [];
-    return [...new Set(matches)]; // remove duplicates
+    return [...new Set(matches)];
 }
 
 // Query Functions
 
-// Get a single course with its prereqs and unlocks
 export function getCourseDetail(courseCode: string): CourseDetail | null {
-
-    const results = db.exec(
-        "SELECT course_code, course_title, description, prerequisites_raw, url FROM courses WHERE course_code = ?",
-        [courseCode]
+    const stmt = db.prepare(
+        "SELECT course_code, course_title, description, prerequisites_raw, url FROM courses WHERE course_code = ?"
     );
-
-    if (results.length === 0 || results[0].values.length === 0) {
-        return null;
+    stmt.bind([courseCode]);
+    let course: Course | null = null;
+    if (stmt.step()) {
+        const row = stmt.getAsObject();
+        course = {
+            course_code: row["course_code"] as string,
+            course_title: row["course_title"] as string,
+            description: (row["description"] as string) || "",
+            prerequisites_raw: (row["prerequisites_raw"] as string) || "",
+            url: (row["url"] as string) || "",
+        };
     }
+    stmt.free();
 
-    const row = results[0].values[0];
-    const course: Course = {
-        course_code: row[0] as string,
-        course_title: row[1] as string,
-        description: (row[2] as string) || "",
-        prerequisites_raw: (row[3] as string) || "",
-        url: (row[4] as string) || "",
-    };
+    if (!course) return null;
 
-
-    const prereqResults = db.exec(
-        "SELECT required_course_code FROM prerequisites WHERE course_code = ?",
-        [courseCode]
+    const prereqStmt = db.prepare(
+        "SELECT required_course_code FROM prerequisites WHERE course_code = ?"
     );
-    const prereqCodes: string[] = prereqResults.length > 0
-        ? prereqResults[0].values.map((r: any[]) => r[0] as string)
-        : [];
+    prereqStmt.bind([courseCode]);
+    const prereqCodes: string[] = [];
+    while (prereqStmt.step()) {
+        prereqCodes.push(prereqStmt.getAsObject()["required_course_code"] as string);
+    }
+    prereqStmt.free();
 
-
-    const unlockResults = db.exec(
-        "SELECT course_code FROM prerequisites WHERE required_course_code = ?",
-        [courseCode]
+    const unlockStmt = db.prepare(
+        "SELECT course_code FROM prerequisites WHERE required_course_code = ?"
     );
-    const unlocks: string[] = unlockResults.length > 0
-        ? unlockResults[0].values.map((r: any[]) => r[0] as string)
-        : [];
+    unlockStmt.bind([courseCode]);
+    const unlocks: string[] = [];
+    while (unlockStmt.step()) {
+        unlocks.push(unlockStmt.getAsObject()["course_code"] as string);
+    }
+    unlockStmt.free();
 
     return {
         ...course,
@@ -189,54 +184,57 @@ export function getCourseDetail(courseCode: string): CourseDetail | null {
     };
 }
 
-// Search courses by code or title
 export function searchCourses(query: string, limit: number = 10): Course[] {
-    const results = db.exec(
-        `SELECT course_code, course_title, description, prerequisites_raw, url 
-         FROM courses 
-         WHERE course_code LIKE ? OR course_title LIKE ? 
-         LIMIT ?`,
-        [`%${query}%`, `%${query}%`, limit]
+    const stmt = db.prepare(
+        `SELECT course_code, course_title, description, prerequisites_raw, url
+         FROM courses
+         WHERE course_code LIKE ? OR course_title LIKE ?
+         LIMIT ?`
     );
-
-    if (results.length === 0) return [];
-
-    return results[0].values.map((row: any[]) => ({
-        course_code: row[0] as string,
-        course_title: row[1] as string,
-        description: (row[2] as string) || "",
-        prerequisites_raw: (row[3] as string) || "",
-        url: (row[4] as string) || "",
-    }));
+    stmt.bind([`%${query}%`, `%${query}%`, limit]);
+    const courses: Course[] = [];
+    while (stmt.step()) {
+        const row = stmt.getAsObject();
+        courses.push({
+            course_code: row["course_code"] as string,
+            course_title: row["course_title"] as string,
+            description: (row["description"] as string) || "",
+            prerequisites_raw: (row["prerequisites_raw"] as string) || "",
+            url: (row["url"] as string) || "",
+        });
+    }
+    stmt.free();
+    return courses;
 }
 
 // Progress Functions
 
 export function getProgress(userId: number): UserProgress[] {
-    const results = db.exec(
-        "SELECT user_id, course_code, status, updated_at FROM user_progress WHERE user_id = ?",
-        [userId]
+    const stmt = db.prepare(
+        "SELECT user_id, course_code, status, updated_at FROM user_progress WHERE user_id = ?"
     );
-
-    if (results.length === 0) return [];
-
-    return results[0].values.map((row: any[]) => ({
-        user_id: row[0] as number,
-        course_code: row[1] as string,
-        status: row[2] as CourseStatus,
-        updated_at: row[3] as string,
-    }));
+    stmt.bind([userId]);
+    const progress: UserProgress[] = [];
+    while (stmt.step()) {
+        const row = stmt.getAsObject();
+        progress.push({
+            user_id: row["user_id"] as number,
+            course_code: row["course_code"] as string,
+            status: row["status"] as CourseStatus,
+            updated_at: row["updated_at"] as string,
+        });
+    }
+    stmt.free();
+    return progress;
 }
 
 export function setProgress(userId: number, courseCode: string, status: CourseStatus | ""): void {
     if (status === "") {
-
         db.run(
             "DELETE FROM user_progress WHERE user_id = ? AND course_code = ?",
             [userId, courseCode]
         );
     } else {
-
         db.run(
             `INSERT OR REPLACE INTO user_progress (user_id, course_code, status, updated_at) 
              VALUES (?, ?, ?, ?)`,
@@ -246,9 +244,8 @@ export function setProgress(userId: number, courseCode: string, status: CourseSt
     saveDatabase();
 }
 
-// User Authentication Functions
- 
-// Create a new user, returns the user ID or null if email already exists
+// ---- User Authentication Functions (FR3) ----
+
 export function createUser(email: string, username: string, passwordHash: string): number | null {
     try {
         db.run(
@@ -256,56 +253,109 @@ export function createUser(email: string, username: string, passwordHash: string
             [email, username, passwordHash, new Date().toISOString()]
         );
         saveDatabase();
- 
-        // Get the ID of the newly created user
-        const result = db.exec("SELECT MAX(id) FROM users WHERE email = ?", [email]);
-        if (result.length > 0 && result[0].values.length > 0) {
-            return result[0].values[0][0] as number;
+
+        const stmt = db.prepare("SELECT id FROM users WHERE email = ?");
+        stmt.bind([email]);
+        let userId: number | null = null;
+        if (stmt.step()) {
+            userId = stmt.getAsObject()["id"] as number;
         }
-        return null;
+        stmt.free();
+        return userId;
     } catch (err) {
         return null;
     }
 }
- 
-// Find a user by email (for login)
+
 export function getUserByEmail(email: string): User | null {
-    const results = db.exec(
-        "SELECT id, email, username, password_hash, created_at FROM users WHERE email = ?",
-        [email]
+    const stmt = db.prepare(
+        "SELECT id, email, username, password_hash, major, created_at FROM users WHERE email = ?"
     );
- 
-    if (results.length === 0 || results[0].values.length === 0) {
-        return null;
+    stmt.bind([email]);
+    let user: User | null = null;
+    if (stmt.step()) {
+        const row = stmt.getAsObject();
+        user = {
+            id: row["id"] as number,
+            email: row["email"] as string,
+            username: row["username"] as string,
+            password_hash: row["password_hash"] as string,
+            major: (row["major"] as string) || "",
+            created_at: row["created_at"] as string,
+        };
     }
- 
-    const row = results[0].values[0];
-    return {
-        id: row[0] as number,
-        email: row[1] as string,
-        username: row[2] as string,
-        password_hash: row[3] as string,
-        created_at: row[4] as string,
-    };
+    stmt.free();
+    return user;
 }
- 
-// Find a user by ID (for JWT verification)
+
 export function getUserById(userId: number): User | null {
-    const results = db.exec(
-        "SELECT id, email, username, password_hash, created_at FROM users WHERE id = ?",
-        [userId]
+    const stmt = db.prepare(
+        "SELECT id, email, username, password_hash, major, created_at FROM users WHERE id = ?"
     );
- 
-    if (results.length === 0 || results[0].values.length === 0) {
-        return null;
+    stmt.bind([userId]);
+    let user: User | null = null;
+    if (stmt.step()) {
+        const row = stmt.getAsObject();
+        user = {
+            id: row["id"] as number,
+            email: row["email"] as string,
+            username: row["username"] as string,
+            password_hash: row["password_hash"] as string,
+            major: (row["major"] as string) || "",
+            created_at: row["created_at"] as string,
+        };
     }
- 
-    const row = results[0].values[0];
-    return {
-        id: row[0] as number,
-        email: row[1] as string,
-        username: row[2] as string,
-        password_hash: row[3] as string,
-        created_at: row[4] as string,
-    };
+    stmt.free();
+    return user;
+}
+
+export function setUserMajor(userId: number, major: string): void {
+    db.run("UPDATE users SET major = ? WHERE id = ?", [major, userId]);
+    saveDatabase();
+}
+
+// ---- Deep Prerequisite / Unlock Tree (Feature 1) ----
+
+function buildPrereqTree(
+    courseCode: string,
+    direction: 'prereqs' | 'unlocks',
+    maxDepth: number,
+    visited: Set<string>,
+    majorCodes: Set<string> | null
+): TreeNode {
+    const detail = getCourseDetail(courseCode);
+    const title = detail ? detail.course_title : courseCode;
+
+    // Stop expanding: already visited (cycle), max depth hit, or not in DB
+    if (visited.has(courseCode) || maxDepth === 0 || !detail) {
+        return { code: courseCode, title, children: [] };
+    }
+
+    visited.add(courseCode);
+
+    let childCodes: string[] = direction === 'prereqs' ? detail.prereq_codes : detail.unlocks;
+
+    // For unlock direction, optionally filter to major-relevant courses only
+    if (direction === 'unlocks' && majorCodes !== null) {
+        childCodes = childCodes.filter(c => majorCodes!.has(c));
+    }
+
+    const children: TreeNode[] = [];
+    for (const childCode of childCodes) {
+        // Skip courses that don't exist in the DB (e.g. "Mathematics 30-1")
+        const childDetail = getCourseDetail(childCode);
+        if (!childDetail) continue;
+        children.push(buildPrereqTree(childCode, direction, maxDepth - 1, visited, majorCodes));
+    }
+
+    return { code: courseCode, title, children };
+}
+
+export function getDeepPrereqChain(
+    courseCode: string,
+    direction: 'prereqs' | 'unlocks',
+    maxDepth: number = 4,
+    majorCodes: Set<string> | null = null
+): TreeNode {
+    return buildPrereqTree(courseCode, direction, maxDepth, new Set<string>(), majorCodes);
 }

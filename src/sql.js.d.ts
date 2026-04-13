@@ -8,7 +8,11 @@ declare module "sql.js" {
     }
     interface Statement {
         run(params?: any[]): void;
+        bind(params?: any[]): boolean;
+        step(): boolean;
+        getAsObject(params?: any): Record<string, any>;
         free(): void;
+        reset(): void;
     }
     interface SqlJsStatic {
         Database: new (data?: ArrayLike<number>) => Database;
